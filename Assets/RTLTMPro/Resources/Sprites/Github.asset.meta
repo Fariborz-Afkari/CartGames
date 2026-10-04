@@ -1,13 +1,8 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/Games/DeadMandDraws/Images.meta
-guid: f0f911d0efb1808429a85c4f1161a451
-folderAsset: yes
-DefaultImporter:
-========
 guid: 0a1d17fe7885fe246b76da5ea9f32feb
 NativeFormatImporter:
->>>>>>>> 6453866 (14050711-4):Assets/RTLTMPro/Resources/Sprites/Github.asset.meta
   externalObjects: {}
+  mainObjectFileID: 11400000
   userData: 
   assetBundleName: 
   assetBundleVariant: 

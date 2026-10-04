@@ -1,13 +1,8 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:Assets/Games/DeadMandDraws.meta
-guid: 6388b7a7ddcc49b46bcf7e6b7fa1a254
-folderAsset: yes
-DefaultImporter:
-========
 guid: 3fbde2e562e333d488bc46986fc6f4f1
 NativeFormatImporter:
->>>>>>>> 6453866 (14050711-4):Assets/RTLTMPro/Fonts/segoeui SDF Arabic.asset.meta
   externalObjects: {}
+  mainObjectFileID: 11400000
   userData: 
   assetBundleName: 
   assetBundleVariant: 

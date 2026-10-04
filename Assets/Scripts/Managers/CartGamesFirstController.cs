@@ -20,12 +20,14 @@ public class CartGamesFirstController : MonoBehaviour
     // ==================================================
 
     [Header("Player")]
-    [SerializeField] private Image avatarImage;
+    [SerializeField] 
+    private Image avatarImage;
 
-    [SerializeField] private TMP_Text txtPlayerName;
+    [SerializeField] 
+    private TMP_Text txtPlayerName;
 
-    [SerializeField] private Sprite[] avatarSprites;
-
+    [SerializeField]
+    private Sprite[] avatarSprites;
 
     // ==================================================
     // COINS
@@ -263,8 +265,7 @@ public class CartGamesFirstController : MonoBehaviour
         // Player Name
         if (txtPlayerName != null)
         {
-            txtPlayerName.text =
-                GameDataManager.GetPlayerName();
+            txtPlayerName.text =PlayerData.PlayerName;
         }
 
 
@@ -291,7 +292,7 @@ public class CartGamesFirstController : MonoBehaviour
 
 
         int avatarIndex =
-            GameDataManager.GetAvatar();
+            PlayerData.AvatarIndex;
 
 
         if (avatarIndex < 0 ||
@@ -305,7 +306,6 @@ public class CartGamesFirstController : MonoBehaviour
             avatarSprites[avatarIndex];
     }
 
-
     // ==================================================
     // LOAD COINS
     // ==================================================
@@ -316,8 +316,7 @@ public class CartGamesFirstController : MonoBehaviour
             return;
 
 
-        int coins =
-            GameDataManager.GetCoins();
+        int coins =PlayerData.Coins;
 
 
         txtCoins.text =
