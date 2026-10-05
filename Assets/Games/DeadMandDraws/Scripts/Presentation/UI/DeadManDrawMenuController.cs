@@ -1,179 +1,732 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+
 using CardGames.DeadManDraws.Core.Players;
+using CardGames.DeadManDraws.Presentation.UI;
 
 namespace CardGames.DeadManDraws.Presentation.UI
 {
     public sealed class DeadManDrawMenuController : MonoBehaviour
     {
+        [Header("Main UI")]
+        [SerializeField] private GameUi _gameUi;
+
+        [Header("Panels")]
+        [SerializeField] private GameObject _startPanel;
+        [SerializeField] private GameObject _helpPanel;
+        [SerializeField] private GameObject _groupGamePanel;
+        [SerializeField] private GameObject _newGamePanel;
+        [SerializeField] private GameObject _selectTraitPanel;
+
+        [Header("New Game")]
+        [SerializeField] private Slider _playerNumSlider;
+        [SerializeField] private Slider _hardnessSlider;
+        [SerializeField] private TMP_Text _txtNumPlayer;
+
+        [Header("Initial Scene")]
+        [SerializeField] private string _initialSceneName = "CartGamesFirst";
+
+        private Button _startPanelBackButton;
+        private Button _helpButton;
+        private Button _groupGameButton;
+        private Button _continueButton;
+        private Button _newGameButton;
+
+        private Button _helpBackButton;
+        private Button _groupGameBackButton;
+        private Button _newGameBackButton;
+
+        private Button _newGameStartButton;
+
+        private Button _trait1Button;
+        private Button _trait2Button;
+
         private const string SaveExistsKey =
-            "CardGames.DeadManDraws.SaveExists";
+            "DeadManDraws.Save.Exists";
 
-        private const string SavedPlayerCountKey =
-            "CardGames.DeadManDraws.SavedPlayerCount";
+        private const string SavePlayerCountKey =
+            "DeadManDraws.Save.PlayerCount";
 
-        private const string SavedDifficultyKey =
-            "CardGames.DeadManDraws.SavedDifficulty";
+        private const string SaveDifficultyKey =
+            "DeadManDraws.Save.Difficulty";
 
-        private const string InitialScene =
-            "CartGamesFirst";
 
-        private GameUi gameUi;
-
-        private GameObject startPanel;
-        private GameObject helpPanel;
-        private GameObject groupGamePanel;
-        private GameObject newGamePanel;
-        private GameObject selectTraitPanel;
-
-        private Button continueButton;
-
-        private Slider playerNumSlider;
-        private Slider hardnessSlider;
-
-        private TMP_Text txtNumPlayer;
-
-        private readonly List<Button> traitButtons =
-            new List<Button>();
+        // =========================================================
+        // UNITY
+        // =========================================================
 
         private void Awake()
         {
-            gameUi = GetComponent<GameUi>();
+            ResolveReferences();
 
-            startPanel = FindObject("StartPanel");
-            helpPanel = FindObject("HelpPanel");
-            groupGamePanel = FindObject("GroupGamePanel");
-            newGamePanel = FindObject("NewGamePanel");
-            selectTraitPanel = FindObject("SelectTraitPanel");
+            if (_gameUi == null)
+            {
+                _gameUi = GetComponent<GameUi>();
+            }
 
-            continueButton =
-                FindButton(startPanel, "Continue_Button");
+            ConfigurePlayerSlider();
+            ConfigureHardnessSlider();
 
-            playerNumSlider =
-                FindComponent<Slider>("PlayerNumSlider");
-
-            hardnessSlider =
-                FindComponent<Slider>("HardnessSlider");
-
-            txtNumPlayer =
-                FindComponent<TMP_Text>("txtNumPlayer");
-
-            SetupStartPanel();
-            SetupNewGamePanel();
-            SetupTraitPanel();
-            SetupSliders();
+            RegisterListeners();
 
             ShowStartPanel();
+
+            UpdateContinueButton();
         }
 
-        private void SetupStartPanel()
+
+        private void OnDestroy()
         {
-            AddClick(
-                startPanel,
-                "NewGame_Button",
-                ShowNewGamePanel);
-
-            AddClick(
-                startPanel,
-                "Help_Button",
-                ShowHelpPanel);
-
-            AddClick(
-                startPanel,
-                "GroupGame_Button",
-                ShowGroupGamePanel);
-
-            AddClick(
-                startPanel,
-                "Continue_Button",
-                ContinueGame);
-
-            AddClick(
-                startPanel,
-                "Back_Button",
-                BackToInitialScene);
+            UnregisterListeners();
         }
 
-        private void SetupNewGamePanel()
-        {
-            AddClick(
-                newGamePanel,
-                "Back_Button",
-                ShowStartPanel);
 
-            AddClick(
-                newGamePanel,
-                "Start_Button",
-                StartNewGame);
-        }
+        // =========================================================
+        // REFERENCES
+        // =========================================================
 
-        private void SetupSliders()
+        private void ResolveReferences()
         {
-            if (playerNumSlider != null)
+            if (_startPanel == null)
+                _startPanel = FindObjectByName("StartPanel");
+
+            if (_helpPanel == null)
+                _helpPanel = FindObjectByName("HelpPanel");
+
+            if (_groupGamePanel == null)
+                _groupGamePanel = FindObjectByName("GroupGamePanel");
+
+            if (_newGamePanel == null)
+                _newGamePanel = FindObjectByName("NewGamePanel");
+
+            if (_selectTraitPanel == null)
+                _selectTraitPanel = FindObjectByName("SelectTraitPanel");
+
+
+            // -----------------------------------------------------
+            // StartPanel buttons
+            // -----------------------------------------------------
+
+            if (_startPanel != null)
             {
-                playerNumSlider.minValue = 2;
-                playerNumSlider.maxValue = 5;
-                playerNumSlider.wholeNumbers = true;
+                _helpButton =
+                    FindButtonInside(_startPanel, "Help_Button");
 
-                playerNumSlider.onValueChanged.AddListener(
-                    OnPlayerNumberChanged);
+                _groupGameButton =
+                    FindButtonInside(_startPanel, "GroupGame_Button");
 
-                OnPlayerNumberChanged(
-                    playerNumSlider.value);
+                _continueButton =
+                    FindButtonInside(_startPanel, "Continue_Button");
+
+                _newGameButton =
+                    FindButtonInside(_startPanel, "NewGame_Button");
+
+                _startPanelBackButton =
+                    FindButtonInside(_startPanel, "Back_Button");
             }
 
-            if (hardnessSlider != null)
+
+            // -----------------------------------------------------
+            // HelpPanel Back
+            // -----------------------------------------------------
+
+            if (_helpPanel != null)
             {
-                // 0 = Easy
-                // 1 = Normal
-                // 2 = Hard
-                hardnessSlider.minValue = 0;
-                hardnessSlider.maxValue = 2;
-                hardnessSlider.wholeNumbers = true;
+                _helpBackButton =
+                    FindButtonInside(_helpPanel, "Back_Button");
             }
+
+
+            // -----------------------------------------------------
+            // GroupGamePanel Back
+            // -----------------------------------------------------
+
+            if (_groupGamePanel != null)
+            {
+                _groupGameBackButton =
+                    FindButtonInside(_groupGamePanel, "Back_Button");
+            }
+
+
+            // -----------------------------------------------------
+            // NewGamePanel
+            // -----------------------------------------------------
+
+            if (_newGamePanel != null)
+            {
+                _newGameBackButton =
+                    FindButtonInside(_newGamePanel, "Back_Button");
+
+                _newGameStartButton =
+                    FindButtonInside(_newGamePanel, "Start_Button");
+
+                if (_playerNumSlider == null)
+                {
+                    _playerNumSlider =
+                        FindComponentInside<Slider>(
+                            _newGamePanel,
+                            "PlayerNumSlider");
+                }
+
+                if (_hardnessSlider == null)
+                {
+                    _hardnessSlider =
+                        FindComponentInside<Slider>(
+                            _newGamePanel,
+                            "HardnessSlider");
+                }
+
+                if (_txtNumPlayer == null)
+                {
+                    _txtNumPlayer =
+                        FindComponentInside<TMP_Text>(
+                            _newGamePanel,
+                            "txtNumPlayer");
+                }
+            }
+
+
+            // -----------------------------------------------------
+            // SelectTraitPanel
+            // -----------------------------------------------------
+
+            if (_selectTraitPanel != null)
+            {
+                _trait1Button =
+                    FindButtonInside(
+                        _selectTraitPanel,
+                        "Trait1_Button");
+
+                _trait2Button =
+                    FindButtonInside(
+                        _selectTraitPanel,
+                        "Trait2_Button");
+            }
+
+
+            // -----------------------------------------------------
+            // Diagnostic
+            // -----------------------------------------------------
+
+            Debug.Log(
+                "[DeadManDrawMenuController] References resolved.\n" +
+                $"GameUi: {_gameUi != null}\n" +
+                $"StartPanel: {_startPanel != null}\n" +
+                $"HelpPanel: {_helpPanel != null}\n" +
+                $"GroupGamePanel: {_groupGamePanel != null}\n" +
+                $"NewGamePanel: {_newGamePanel != null}\n" +
+                $"SelectTraitPanel: {_selectTraitPanel != null}\n" +
+                $"NewGame Start_Button: {_newGameStartButton != null}\n" +
+                $"PlayerNumSlider: {_playerNumSlider != null}\n" +
+                $"HardnessSlider: {_hardnessSlider != null}\n" +
+                $"Trait1_Button: {_trait1Button != null}\n" +
+                $"Trait2_Button: {_trait2Button != null}"
+            );
         }
 
-        private void OnPlayerNumberChanged(float value)
+
+        private GameObject FindObjectByName(string objectName)
         {
-            if (txtNumPlayer != null)
+            Transform[] allTransforms =
+                GetComponentsInChildren<Transform>(true);
+
+            foreach (Transform t in allTransforms)
             {
-                txtNumPlayer.text =
-                    Mathf.RoundToInt(value).ToString();
+                if (t.name == objectName)
+                    return t.gameObject;
             }
+
+            Debug.LogWarning(
+                $"[DeadManDrawMenuController] Could not find object: {objectName}");
+
+            return null;
         }
 
-        private void SetupTraitPanel()
+
+        private Button FindButtonInside(
+            GameObject parent,
+            string buttonName)
         {
-            if (selectTraitPanel == null)
+            if (parent == null)
+                return null;
+
+            Transform[] allTransforms =
+                parent.GetComponentsInChildren<Transform>(true);
+
+            foreach (Transform t in allTransforms)
+            {
+                if (t.name != buttonName)
+                    continue;
+
+                Button button =
+                    t.GetComponent<Button>();
+
+                if (button != null)
+                    return button;
+            }
+
+            Debug.LogWarning(
+                $"[DeadManDrawMenuController] Button '{buttonName}' " +
+                $"was not found inside '{parent.name}'.");
+
+            return null;
+        }
+
+
+        private T FindComponentInside<T>(
+            GameObject parent,
+            string objectName)
+            where T : Component
+        {
+            if (parent == null)
+                return null;
+
+            Transform[] allTransforms =
+                parent.GetComponentsInChildren<Transform>(true);
+
+            foreach (Transform t in allTransforms)
+            {
+                if (t.name != objectName)
+                    continue;
+
+                T component =
+                    t.GetComponent<T>();
+
+                if (component != null)
+                    return component;
+            }
+
+            Debug.LogWarning(
+                $"[DeadManDrawMenuController] Component '{typeof(T).Name}' " +
+                $"on object '{objectName}' was not found inside '{parent.name}'.");
+
+            return null;
+        }
+
+
+        // =========================================================
+        // LISTENERS
+        // =========================================================
+
+        private void RegisterListeners()
+        {
+            // Remove first so this method is safe even if
+            // Unity calls initialization more than once.
+            UnregisterListeners();
+
+
+            if (_helpButton != null)
+            {
+                _helpButton.onClick.AddListener(
+                    OpenHelpPanel);
+            }
+
+            if (_groupGameButton != null)
+            {
+                _groupGameButton.onClick.AddListener(
+                    OpenGroupGamePanel);
+            }
+
+            if (_continueButton != null)
+            {
+                _continueButton.onClick.AddListener(
+                    ContinueGame);
+            }
+
+            if (_newGameButton != null)
+            {
+                _newGameButton.onClick.AddListener(
+                    OpenNewGamePanel);
+            }
+
+
+            if (_startPanelBackButton != null)
+            {
+                _startPanelBackButton.onClick.AddListener(
+                    BackToInitialScene);
+            }
+
+
+            if (_helpBackButton != null)
+            {
+                _helpBackButton.onClick.AddListener(
+                    ShowStartPanel);
+            }
+
+            if (_groupGameBackButton != null)
+            {
+                _groupGameBackButton.onClick.AddListener(
+                    ShowStartPanel);
+            }
+
+            if (_newGameBackButton != null)
+            {
+                _newGameBackButton.onClick.AddListener(
+                    ShowStartPanel);
+            }
+
+
+            // =====================================================
+            // THIS IS THE IMPORTANT PART
+            //
+            // NewGamePanel/Start_Button is explicitly registered
+            // here. GameUi must NOT register this button.
+            // =====================================================
+
+            if (_newGameStartButton != null)
+            {
+                _newGameStartButton.onClick.AddListener(
+                    StartNewGame);
+
+                Debug.Log(
+                    "[DeadManDrawMenuController] " +
+                    "Start_Button listener registered.");
+            }
+            else
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "NewGamePanel/Start_Button was NOT found!");
+            }
+
+
+            if (_playerNumSlider != null)
+            {
+                _playerNumSlider.onValueChanged.AddListener(
+                    OnPlayerCountChanged);
+            }
+
+            if (_hardnessSlider != null)
+            {
+                _hardnessSlider.onValueChanged.AddListener(
+                    OnDifficultyChanged);
+            }
+
+
+            RegisterTraitButtons();
+        }
+
+
+        private void UnregisterListeners()
+        {
+            if (_helpButton != null)
+                _helpButton.onClick.RemoveListener(
+                    OpenHelpPanel);
+
+            if (_groupGameButton != null)
+                _groupGameButton.onClick.RemoveListener(
+                    OpenGroupGamePanel);
+
+            if (_continueButton != null)
+                _continueButton.onClick.RemoveListener(
+                    ContinueGame);
+
+            if (_newGameButton != null)
+                _newGameButton.onClick.RemoveListener(
+                    OpenNewGamePanel);
+
+            if (_startPanelBackButton != null)
+                _startPanelBackButton.onClick.RemoveListener(
+                    BackToInitialScene);
+
+            if (_helpBackButton != null)
+                _helpBackButton.onClick.RemoveListener(
+                    ShowStartPanel);
+
+            if (_groupGameBackButton != null)
+                _groupGameBackButton.onClick.RemoveListener(
+                    ShowStartPanel);
+
+            if (_newGameBackButton != null)
+                _newGameBackButton.onClick.RemoveListener(
+                    ShowStartPanel);
+
+            if (_newGameStartButton != null)
+                _newGameStartButton.onClick.RemoveListener(
+                    StartNewGame);
+
+            if (_playerNumSlider != null)
+                _playerNumSlider.onValueChanged.RemoveListener(
+                    OnPlayerCountChanged);
+
+            if (_hardnessSlider != null)
+                _hardnessSlider.onValueChanged.RemoveListener(
+                    OnDifficultyChanged);
+
+            if (_trait1Button != null)
+                _trait1Button.onClick.RemoveListener(
+                    SelectTrait1);
+
+            if (_trait2Button != null)
+                _trait2Button.onClick.RemoveListener(
+                    SelectTrait2);
+        }
+
+
+        // =========================================================
+        // SLIDERS
+        // =========================================================
+
+        private void ConfigurePlayerSlider()
+        {
+            if (_playerNumSlider == null)
                 return;
 
-            Button[] buttons =
-                selectTraitPanel
-                    .GetComponentsInChildren<Button>(true);
+            _playerNumSlider.minValue = 2;
+            _playerNumSlider.maxValue = 8;
+            _playerNumSlider.wholeNumbers = true;
 
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                buttons[i].interactable = false;
-                traitButtons.Add(buttons[i]);
-            }
+            int savedPlayerCount =
+                PlayerPrefs.GetInt(SavePlayerCountKey,2);
+
+            savedPlayerCount =
+                Mathf.Clamp(savedPlayerCount, 2, 5);
+
+            _playerNumSlider.SetValueWithoutNotify(
+                savedPlayerCount);
+
+            UpdatePlayerCountText(savedPlayerCount);
         }
+
+
+        private void ConfigureHardnessSlider()
+        {
+            if (_hardnessSlider == null)
+                return;
+
+            _hardnessSlider.minValue = 0;
+            _hardnessSlider.maxValue = 2;
+            _hardnessSlider.wholeNumbers = true;
+
+            int savedDifficulty =
+                PlayerPrefs.GetInt(
+                    SaveDifficultyKey,
+                    1);
+
+            savedDifficulty =
+                Mathf.Clamp(savedDifficulty, 0, 2);
+
+            _hardnessSlider.SetValueWithoutNotify(
+                savedDifficulty);
+        }
+
+
+        private void OnPlayerCountChanged(float value)
+        {
+            int playerCount =
+                Mathf.RoundToInt(value);
+
+            playerCount =
+                Mathf.Clamp(playerCount, 2, 5);
+
+            UpdatePlayerCountText(playerCount);
+        }
+
+
+        private void OnDifficultyChanged(float value)
+        {
+            int difficulty =
+                Mathf.RoundToInt(value);
+
+            difficulty =
+                Mathf.Clamp(difficulty, 0, 2);
+
+            Debug.Log(
+                $"[DeadManDrawMenuController] AI difficulty: {difficulty}");
+        }
+
+
+        private void UpdatePlayerCountText(int playerCount)
+        {
+            if (_txtNumPlayer == null)
+                return;
+
+            _txtNumPlayer.text =
+                playerCount.ToString();
+        }
+
+
+        // =========================================================
+        // START PANEL
+        // =========================================================
+
+        private void ShowStartPanel()
+        {
+            SetPanel(_startPanel, true);
+            SetPanel(_helpPanel, false);
+            SetPanel(_groupGamePanel, false);
+            SetPanel(_newGamePanel, false);
+            SetPanel(_selectTraitPanel, false);
+
+            UpdateContinueButton();
+
+            Debug.Log(
+                "[DeadManDrawMenuController] StartPanel shown.");
+        }
+
+
+        private void OpenHelpPanel()
+        {
+            SetPanel(_startPanel, false);
+            SetPanel(_helpPanel, true);
+            SetPanel(_groupGamePanel, false);
+            SetPanel(_newGamePanel, false);
+            SetPanel(_selectTraitPanel, false);
+
+            Debug.Log(
+                "[DeadManDrawMenuController] HelpPanel opened.");
+        }
+
+
+        private void OpenGroupGamePanel()
+        {
+            SetPanel(_startPanel, false);
+            SetPanel(_helpPanel, false);
+            SetPanel(_groupGamePanel, true);
+            SetPanel(_newGamePanel, false);
+            SetPanel(_selectTraitPanel, false);
+
+            Debug.Log(
+                "[DeadManDrawMenuController] GroupGamePanel opened.");
+        }
+
+
+        private void OpenNewGamePanel()
+        {
+            SetPanel(_startPanel, false);
+            SetPanel(_helpPanel, false);
+            SetPanel(_groupGamePanel, false);
+            SetPanel(_newGamePanel, true);
+            SetPanel(_selectTraitPanel, false);
+
+            Debug.Log(
+                "[DeadManDrawMenuController] NewGamePanel opened.");
+        }
+
+
+        // =========================================================
+        // NEW GAME
+        // =========================================================
 
         private void StartNewGame()
         {
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                "StartNewGame() CLICKED.");
+
+
+            if (_gameUi == null)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "GameUi reference is NULL.");
+
+                return;
+            }
+
+
+            int playerCount = 2;
+
+            if (_playerNumSlider != null)
+            {
+                playerCount =
+                    Mathf.RoundToInt(
+                        _playerNumSlider.value);
+            }
+
+            playerCount =
+                Mathf.Clamp(playerCount, 2, 5);
+
+
+            int difficulty = 1;
+
+            if (_hardnessSlider != null)
+            {
+                difficulty =
+                    Mathf.RoundToInt(
+                        _hardnessSlider.value);
+            }
+
+            difficulty =
+                Mathf.Clamp(difficulty, 0, 2);
+
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                $"Starting match. Players={playerCount}, " +
+                $"Difficulty={difficulty}");
+
+
+            bool started =
+                _gameUi.BeginNewMatch(
+                    playerCount,
+                    difficulty);
+
+
+            if (!started)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "GameUi.BeginNewMatch() returned FALSE.");
+
+                return;
+            }
+
+
+            SaveMatchSetup(
+                playerCount,
+                difficulty);
+
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                "Match started successfully.");
+
+
+            ShowTraitSelection();
+        }
+
+
+        // =========================================================
+        // CONTINUE
+        // =========================================================
+
+        private void ContinueGame()
+        {
+            if (!HasSavedGame())
+            {
+                Debug.LogWarning(
+                    "[DeadManDrawMenuController] " +
+                    "No saved game exists.");
+
+                return;
+            }
+
+
+            if (_gameUi == null)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "GameUi reference is NULL.");
+
+                return;
+            }
+
+
             int playerCount =
-                Mathf.RoundToInt(
-                    playerNumSlider != null
-                        ? playerNumSlider.value
-                        : 4);
+                PlayerPrefs.GetInt(
+                    SavePlayerCountKey,
+                    2);
 
             int difficulty =
-                Mathf.RoundToInt(
-                    hardnessSlider != null
-                        ? hardnessSlider.value
-                        : 1);
+                PlayerPrefs.GetInt(
+                    SaveDifficultyKey,
+                    1);
+
 
             playerCount =
                 Mathf.Clamp(playerCount, 2, 5);
@@ -181,109 +734,46 @@ namespace CardGames.DeadManDraws.Presentation.UI
             difficulty =
                 Mathf.Clamp(difficulty, 0, 2);
 
-            if (gameUi == null)
-                return;
 
             bool started =
-                gameUi.BeginNewMatch(
+                _gameUi.BeginNewMatch(
                     playerCount,
                     difficulty);
 
-            if (!started)
-                return;
 
+            if (!started)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "Continue failed.");
+
+                return;
+            }
+
+
+            ShowTraitSelection();
+        }
+
+
+        private void SaveMatchSetup(
+            int playerCount,
+            int difficulty)
+        {
             PlayerPrefs.SetInt(
                 SaveExistsKey,
                 1);
 
             PlayerPrefs.SetInt(
-                SavedPlayerCountKey,
+                SavePlayerCountKey,
                 playerCount);
 
             PlayerPrefs.SetInt(
-                SavedDifficultyKey,
+                SaveDifficultyKey,
                 difficulty);
 
             PlayerPrefs.Save();
-
-            SetupTraitButtons();
-
-            ShowOnly(selectTraitPanel);
         }
 
-        private void SetupTraitButtons()
-        {
-            IReadOnlyList<PlayerTrait> traits =
-                gameUi.TraitOptions;
-
-            for (int i = 0; i < traitButtons.Count; i++)
-            {
-                Button button = traitButtons[i];
-
-                button.onClick.RemoveAllListeners();
-
-                if (i >= traits.Count)
-                {
-                    button.interactable = false;
-                    continue;
-                }
-
-                PlayerTrait trait = traits[i];
-
-                button.interactable = true;
-
-                TMP_Text text =
-                    button.GetComponentInChildren<TMP_Text>(
-                        true);
-
-                if (text != null)
-                    text.text = trait.ToString();
-
-                button.onClick.AddListener(
-                    () => SelectTrait(trait));
-            }
-        }
-
-        private void SelectTrait(PlayerTrait trait)
-        {
-            if (!gameUi.SelectTrait(trait))
-                return;
-
-            // Trait انتخاب شد؛ منوها بسته می‌شوند
-            // و صفحه اصلی بازی نمایش داده می‌شود.
-            HideMenuPanels();
-            ShowGameBoard();
-
-            // دیگر Save مربوط به "شروع نشده" نیست.
-            // در سیستم Save واقعی باید اینجا State ذخیره شود.
-        }
-
-        private void ContinueGame()
-        {
-            if (!HasSavedGame())
-                return;
-
-            int playerCount =
-                PlayerPrefs.GetInt(
-                    SavedPlayerCountKey,
-                    4);
-
-            int difficulty =
-                PlayerPrefs.GetInt(
-                    SavedDifficultyKey,
-                    1);
-
-            if (!gameUi.BeginNewMatch(
-                    playerCount,
-                    difficulty))
-            {
-                return;
-            }
-
-            SetupTraitButtons();
-
-            ShowOnly(selectTraitPanel);
-        }
 
         private bool HasSavedGame()
         {
@@ -292,201 +782,200 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 0) == 1;
         }
 
-        private void ShowStartPanel()
-        {
-            ShowOnly(startPanel);
 
-            if (continueButton != null)
-                continueButton.interactable =
-                    HasSavedGame();
+        private void UpdateContinueButton()
+        {
+            if (_continueButton == null)
+                return;
+
+            _continueButton.interactable =
+                HasSavedGame();
         }
 
-        private void ShowNewGamePanel()
+
+        // =========================================================
+        // TRAIT SELECTION
+        // =========================================================
+
+        private void ShowTraitSelection()
         {
-            ShowOnly(newGamePanel);
+            SetPanel(_startPanel, false);
+            SetPanel(_helpPanel, false);
+            SetPanel(_groupGamePanel, false);
+            SetPanel(_newGamePanel, false);
+            SetPanel(_selectTraitPanel, true);
+
+            RegisterTraitButtons();
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                "SelectTraitPanel shown.");
         }
 
-        private void ShowHelpPanel()
+
+        private void RegisterTraitButtons()
         {
-            ShowOnly(helpPanel);
-        }
-
-        private void ShowGroupGamePanel()
-        {
-            ShowOnly(groupGamePanel);
-        }
-
-        private void BackToInitialScene()
-        {
-            SceneManager.LoadScene(
-                InitialScene);
-        }
-
-        private void ShowOnly(GameObject panel)
-        {
-            HideMenuPanels();
-
-            if (panel != null)
-                panel.SetActive(true);
-
-            HideGameBoard();
-        }
-
-        private void HideMenuPanels()
-        {
-            SetActive(startPanel, false);
-            SetActive(helpPanel, false);
-            SetActive(groupGamePanel, false);
-            SetActive(newGamePanel, false);
-            SetActive(selectTraitPanel, false);
-        }
-
-        private void HideGameBoard()
-        {
-            string[] names =
+            if (_trait1Button != null)
             {
-                "Background",
-                "TopArea",
-                "PlayerArea",
-                "TurnIndicator",
-                "BoardPanel",
-                "DrawDeck",
-                "BurnDeck",
-                "Trait",
-                "CollectButton",
-                "PlayerBanks",
-                "Score",
-                "PlayerDetailsPopup",
-                "CardsPopup",
-                "ConfirmationPopup",
-                "PausePopup",
-                "VictoryPopup",
-                "DefeatPopup",
-                "Notification"
-            };
+                _trait1Button.onClick.RemoveListener(
+                    SelectTrait1);
 
-            for (int i = 0; i < names.Length; i++)
-                SetActive(
-                    FindObject(names[i]),
-                    false);
+                _trait1Button.onClick.AddListener(
+                    SelectTrait1);
+            }
+
+            if (_trait2Button != null)
+            {
+                _trait2Button.onClick.RemoveListener(
+                    SelectTrait2);
+
+                _trait2Button.onClick.AddListener(
+                    SelectTrait2);
+            }
         }
+
+
+        private void SelectTrait1()
+        {
+            SelectTraitByIndex(0);
+        }
+
+
+        private void SelectTrait2()
+        {
+            SelectTraitByIndex(1);
+        }
+
+
+        private void SelectTraitByIndex(int index)
+        {
+            if (_gameUi == null)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "GameUi is NULL.");
+
+                return;
+            }
+
+
+            IReadOnlyList<PlayerTrait> traits =
+                _gameUi.TraitOptions;
+
+
+            if (traits == null ||
+                traits.Count == 0)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "No TraitOptions are available.");
+
+                return;
+            }
+
+
+            if (index < 0 ||
+                index >= traits.Count)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    $"Trait index {index} is invalid. " +
+                    $"Available traits: {traits.Count}");
+
+                return;
+            }
+
+
+            PlayerTrait selectedTrait =
+                traits[index];
+
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                $"Selecting trait: {selectedTrait}");
+
+
+            bool selected =
+                _gameUi.SelectTrait(
+                    selectedTrait);
+
+
+            if (!selected)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "SelectTrait() returned FALSE.");
+
+                return;
+            }
+
+
+            ShowGameBoard();
+        }
+
+
+        // =========================================================
+        // GAME BOARD
+        // =========================================================
 
         private void ShowGameBoard()
         {
-            string[] names =
-            {
-                "Background",
-                "TopArea",
-                "PlayerArea",
-                "TurnIndicator",
-                "BoardPanel",
-                "DrawDeck",
-                "BurnDeck",
-                "Trait",
-                "CollectButton",
-                "PlayerBanks",
-                "Score",
-                "Notification"
-            };
+            // IMPORTANT:
+            //
+            // We do NOT disable the actual game board.
+            // Only menu panels are hidden.
 
-            for (int i = 0; i < names.Length; i++)
-                SetActive(
-                    FindObject(names[i]),
-                    true);
+            SetPanel(_startPanel, false);
+            SetPanel(_helpPanel, false);
+            SetPanel(_groupGamePanel, false);
+            SetPanel(_newGamePanel, false);
+            SetPanel(_selectTraitPanel, false);
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                "Menu hidden. Game board active.");
         }
 
-        private void AddClick(
-            GameObject parent,
-            string buttonName,
-            UnityEngine.Events.UnityAction action)
-        {
-            Button button =
-                FindButton(
-                    parent,
-                    buttonName);
 
-            if (button == null)
+        // =========================================================
+        // BACK TO INITIAL SCENE
+        // =========================================================
+
+        private void BackToInitialScene()
+        {
+            if (string.IsNullOrWhiteSpace(
+                _initialSceneName))
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "Initial scene name is empty.");
+
                 return;
-
-            button.onClick.AddListener(action);
-        }
-
-        private Button FindButton(
-            GameObject parent,
-            string name)
-        {
-            if (parent == null)
-                return null;
-
-            Transform child =
-                FindDeepChild(
-                    parent.transform,
-                    name);
-
-            return child != null
-                ? child.GetComponent<Button>()
-                : null;
-        }
-
-        private T FindComponent<T>(
-            string name)
-            where T : Component
-        {
-            Transform child =
-                FindDeepChild(
-                    transform,
-                    name);
-
-            return child != null
-                ? child.GetComponent<T>()
-                : null;
-        }
-
-        private GameObject FindObject(
-            string name)
-        {
-            Transform child =
-                FindDeepChild(
-                    transform,
-                    name);
-
-            return child != null
-                ? child.gameObject
-                : null;
-        }
-
-        private static Transform FindDeepChild(
-            Transform root,
-            string name)
-        {
-            if (root == null)
-                return null;
-
-            if (root.name == name)
-                return root;
-
-            for (int i = 0;
-                 i < root.childCount;
-                 i++)
-            {
-                Transform result =
-                    FindDeepChild(
-                        root.GetChild(i),
-                        name);
-
-                if (result != null)
-                    return result;
             }
 
-            return null;
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                $"Loading initial scene: {_initialSceneName}");
+
+
+            SceneManager.LoadScene(
+                _initialSceneName);
         }
 
-        private static void SetActive(
-            GameObject target,
-            bool value)
+
+        // =========================================================
+        // HELPERS
+        // =========================================================
+
+        private void SetPanel(
+            GameObject panel,
+            bool visible)
         {
-            if (target != null)
-                target.SetActive(value);
+            if (panel == null)
+                return;
+
+            panel.SetActive(visible);
         }
     }
 }

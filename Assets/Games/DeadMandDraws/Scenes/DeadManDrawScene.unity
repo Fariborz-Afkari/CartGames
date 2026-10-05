@@ -5034,10 +5034,10 @@ MonoBehaviour:
   m_FillRect: {fileID: 100055685}
   m_HandleRect: {fileID: 1576682194}
   m_Direction: 0
-  m_MinValue: 0
+  m_MinValue: 2
   m_MaxValue: 8
   m_WholeNumbers: 1
-  m_Value: 0
+  m_Value: 2
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -7064,7 +7064,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  _startButton: {fileID: 1854023978}
+  _startButton: {fileID: 0}
   _endTurnButton: {fileID: 600490340}
   _buyCoinsButton: {fileID: 0}
   _collectCardsButton: {fileID: 0}
@@ -7121,6 +7121,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 641e01897260917479975fe62ee9cd3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CardGames.DeadManDraws.Runtime::CardGames.DeadManDraws.Presentation.UI.DeadManDrawMenuController
+  _gameUi: {fileID: 725111481}
+  _startPanel: {fileID: 2018335689}
+  _helpPanel: {fileID: 2010510279}
+  _groupGamePanel: {fileID: 2138523108}
+  _newGamePanel: {fileID: 224856736}
+  _selectTraitPanel: {fileID: 14193906}
+  _playerNumSlider: {fileID: 0}
+  _hardnessSlider: {fileID: 0}
+  _txtNumPlayer: {fileID: 0}
+  _initialSceneName: CartGamesFirst
 --- !u!1 &727335008
 GameObject:
   m_ObjectHideFlags: 0
@@ -18515,10 +18525,10 @@ MonoBehaviour:
   m_FillRect: {fileID: 871498879}
   m_HandleRect: {fileID: 1691443000}
   m_Direction: 0
-  m_MinValue: 0
+  m_MinValue: 1
   m_MaxValue: 3
   m_WholeNumbers: 1
-  m_Value: 0
+  m_Value: 1
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []

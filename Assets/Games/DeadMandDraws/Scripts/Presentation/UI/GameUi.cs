@@ -150,8 +150,11 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
         private void RegisterListeners()
         {
-            if (_startButton != null)
-                _startButton.onClick.AddListener(OnStartClicked);
+            // IMPORTANT:
+            // NewGamePanel/Start_Button is owned by
+            // DeadManDrawMenuController.
+            //
+            // Do NOT register GameUi.OnStartClicked() here.
 
             if (_endTurnButton != null)
                 _endTurnButton.onClick.AddListener(OnEndTurnClicked);
@@ -159,19 +162,14 @@ namespace CardGames.DeadManDraws.Presentation.UI
             if (_buyCoinsButton != null)
                 _buyCoinsButton.onClick.AddListener(OnBuyCoinsClicked);
         }
-
         private void UnregisterListeners()
         {
-            if (_startButton != null)
-                _startButton.onClick.RemoveListener(OnStartClicked);
-
             if (_endTurnButton != null)
                 _endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
 
             if (_buyCoinsButton != null)
                 _buyCoinsButton.onClick.RemoveListener(OnBuyCoinsClicked);
         }
-
         private void Refresh()
         {
             if (_viewModel == null)
@@ -207,9 +205,6 @@ namespace CardGames.DeadManDraws.Presentation.UI
         private void RefreshActions()
         {
             bool playerTurn = _viewModel.IsPlayerTurn && !_viewModel.IsGameOver;
-
-            if (_startButton != null)
-                _startButton.interactable = _viewModel.CanStartMatch;
 
             if (_endTurnButton != null)
                 _endTurnButton.interactable = playerTurn;
@@ -620,8 +615,6 @@ namespace CardGames.DeadManDraws.Presentation.UI
         // Button handlers
         // ---------------------------------------------------------------------
 
-        private void OnStartClicked() =>
-            _viewModel.StartMatch();
 
         private void OnEndTurnClicked()
         {
@@ -928,13 +921,40 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
         public bool BeginNewMatch(int playerCount, int aiDifficulty)
         {
-            if (_viewModel == null || !_viewModel.CanStartMatch)
-                return false;
+            if (_viewModel == null)
+            {
+                Debug.LogError(
+                    "[GameUi] GameViewModel is NULL.");
 
-            _viewModel.StartMatch(playerCount, aiDifficulty);
+                return false;
+            }
+
+            if (playerCount < 2 || playerCount > 5)
+            {
+                Debug.LogError(
+                    $"[GameUi] Invalid player count: {playerCount}");
+
+                return false;
+            }
+
+            if (aiDifficulty < 0 || aiDifficulty > 2)
+            {
+                Debug.LogError(
+                    $"[GameUi] Invalid AI difficulty: {aiDifficulty}");
+
+                return false;
+            }
+
+            Debug.Log(
+                $"[GameUi] BeginNewMatch: " +
+                $"players={playerCount}, difficulty={aiDifficulty}");
+
+            _viewModel.StartMatch(
+                playerCount,
+                aiDifficulty);
+
             return true;
         }
-
         public IReadOnlyList<PlayerTrait> TraitOptions
         {
             get
