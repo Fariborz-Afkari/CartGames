@@ -85,6 +85,28 @@ namespace CardGames.DeadManDraws.Presentation.UI
         [Header("Audio")]
         [SerializeField] private UiAudio _uiAudio;
 
+        public IReadOnlyList<PlayerTrait> TraitOptions
+        {
+            get
+            {
+                if (_viewModel == null)
+                {
+                    Debug.LogError(
+                        "[GameUi] GameViewModel is NULL.");
+
+                    return Array.Empty<PlayerTrait>();
+                }
+
+                IReadOnlyList<PlayerTrait> options =
+                    _viewModel.TraitOptions;
+
+                Debug.Log(
+                    $"[GameUi] TraitOptions count = " +
+                    $"{(options != null ? options.Count : -1)}");
+
+                return options ?? Array.Empty<PlayerTrait>();
+            }
+        }
         private GameViewModel _viewModel;
         private readonly Dictionary<int, PlayerPanelUi> _playerPanels = new();
         private readonly List<Coroutine> _animations = new();
@@ -961,23 +983,16 @@ namespace CardGames.DeadManDraws.Presentation.UI
             return true;
         }
 
-
-        public IReadOnlyList<PlayerTrait> TraitOptions
-        {
-            get
-            {
-                return _viewModel != null
-                    ? _viewModel.TraitOptions
-                    : Array.Empty<PlayerTrait>();
-            }
-        }
-
-
         public bool SelectTrait(
             PlayerTrait trait)
         {
             if (_viewModel == null)
+            {
+                Debug.LogError(
+                    "[GameUi] GameViewModel is NULL.");
+
                 return false;
+            }
 
             return _viewModel.SelectTrait(trait);
         }

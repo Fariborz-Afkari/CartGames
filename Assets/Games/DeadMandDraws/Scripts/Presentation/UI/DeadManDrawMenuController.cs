@@ -851,6 +851,10 @@ namespace CardGames.DeadManDraws.Presentation
 
         private void StartNewGame()
         {
+
+
+
+
             Debug.Log(
                 "[DeadManDrawMenuController] " +
                 "StartNewGame() CLICKED.");
