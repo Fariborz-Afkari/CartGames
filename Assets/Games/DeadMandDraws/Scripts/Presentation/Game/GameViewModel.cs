@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CardGames.DeadManDraws.Core.Players;
+using UnityEngine;
 
 namespace CardGames.DeadManDraws.Presentation.Game
 {
@@ -138,10 +139,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
             get { return _presenter.TurnLog; }
         }
 
-        public void StartMatch()
-        {
-            _presenter.StartMatch();
-        }
+        //public void StartMatch()
+        //{
+        //    _presenter.StartMatch();
+        //}
 
         public bool SelectTrait(
             PlayerTrait trait)
@@ -204,6 +205,18 @@ namespace CardGames.DeadManDraws.Presentation.Game
         public void StartMatch(int playerCount, int aiDifficulty)
         {
             _presenter.StartMatch(playerCount, aiDifficulty);
+        }
+        public void ContinueAfterTraitSelection()
+        {
+            if (_presenter == null)
+            {
+                Debug.LogError(
+                    "[GameViewModel] Presenter is NULL.");
+
+                return;
+            }
+
+            _presenter.ContinueAfterTraitSelection();
         }
     }
 }

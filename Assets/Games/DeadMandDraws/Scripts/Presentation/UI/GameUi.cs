@@ -919,7 +919,9 @@ namespace CardGames.DeadManDraws.Presentation.UI
             }
         }
 
-        public bool BeginNewMatch(int playerCount, int aiDifficulty)
+        public bool BeginNewMatch(
+    int playerCount,
+    int aiDifficulty)
         {
             if (_viewModel == null)
             {
@@ -929,7 +931,8 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 return false;
             }
 
-            if (playerCount < 2 || playerCount > 5)
+            if (playerCount < 2 ||
+                playerCount > 5)
             {
                 Debug.LogError(
                     $"[GameUi] Invalid player count: {playerCount}");
@@ -937,7 +940,8 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 return false;
             }
 
-            if (aiDifficulty < 0 || aiDifficulty > 2)
+            if (aiDifficulty < 0 ||
+                aiDifficulty > 2)
             {
                 Debug.LogError(
                     $"[GameUi] Invalid AI difficulty: {aiDifficulty}");
@@ -947,7 +951,8 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
             Debug.Log(
                 $"[GameUi] BeginNewMatch: " +
-                $"players={playerCount}, difficulty={aiDifficulty}");
+                $"players={playerCount}, " +
+                $"difficulty={aiDifficulty}");
 
             _viewModel.StartMatch(
                 playerCount,
@@ -955,6 +960,8 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
             return true;
         }
+
+
         public IReadOnlyList<PlayerTrait> TraitOptions
         {
             get
@@ -965,12 +972,26 @@ namespace CardGames.DeadManDraws.Presentation.UI
             }
         }
 
-        public bool SelectTrait(PlayerTrait trait)
+
+        public bool SelectTrait(
+            PlayerTrait trait)
         {
             if (_viewModel == null)
                 return false;
 
             return _viewModel.SelectTrait(trait);
+        }
+        public void ContinueAfterTraitSelection()
+        {
+            if (_viewModel == null)
+            {
+                Debug.LogError(
+                    "[GameUi] GameViewModel is NULL.");
+
+                return;
+            }
+
+            _viewModel.ContinueAfterTraitSelection();
         }
     }
 }

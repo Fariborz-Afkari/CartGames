@@ -7,6 +7,7 @@ using CardGames.DeadManDraws.Core.Players;
 using CardGames.DeadManDraws.Platform.Economy;
 using CardGames.DeadManDraws.Platform.Iap;
 using CardGames.DeadManDraws.Platform.Storage;
+using UnityEngine;
 
 namespace CardGames.DeadManDraws.Presentation.Game
 {
@@ -185,28 +186,28 @@ namespace CardGames.DeadManDraws.Presentation.Game
             }
         }
 
-        public void StartMatch()
+        public void StartMatch(
+    int playerCount,
+    int aiDifficulty)
         {
+            if (playerCount < 2 || playerCount > 5)
+                throw new ArgumentOutOfRangeException(
+                    nameof(playerCount));
+
             if (!CanStartMatch)
             {
-                Status =
-                    Coins < 1
-                        ? "Not enough coins."
-                        : "Cannot start a new match.";
-
+                Status = "Cannot start a new match.";
                 NotifyChanged();
                 return;
             }
 
             string error;
 
-            if (!Economy.TryStartMatch(
-                    out error))
+            if (!Economy.TryStartMatch(out error))
             {
-                Status =
-                    string.IsNullOrEmpty(error)
-                        ? "Cannot start match."
-                        : error;
+                Status = string.IsNullOrEmpty(error)
+                    ? "Cannot start match."
+                    : error;
 
                 NotifyChanged();
                 return;
@@ -214,25 +215,33 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
             _turnLog.Clear();
 
-            _engine.StartMatch(
-                PlayerCount,
-                DeckCopies);
+            _flowController =
+                new GameFlowController(
+                    _engine,
+                    new BasicAiStrategy(aiDifficulty));
 
-            Status =
-                "Choose your Trait.";
+            _engine.StartMatch(
+                playerCount,
+                1);
+
+            /*
+             * در این مرحله بازی هنوز نباید وارد Turnهای AI شود.
+             *
+             * Engine در StartMatch دو Trait تصادفی برای
+             * بازیکن ایجاد کرده و بازی در TraitSelection است.
+             */
+
+            Status = "Choose your Trait.";
 
             NotifyChanged();
 
             /*
-             * AI trait choices are resolved here.
-             * Human choice remains visible through
-             * GetHumanTraitOptions().
+             * عمداً اینجا RunAiTurns() را اجرا نمی‌کنیم.
+             *
+             * بعد از انتخاب Trait توسط بازیکن انسانی،
+             * ContinueAfterTraitSelection() فراخوانی می‌شود.
              */
-            _flowController.RunAiTurns();
-
-            NotifyChanged();
         }
-
         public bool SelectTrait(
             PlayerTrait trait)
         {
@@ -816,41 +825,22 @@ namespace CardGames.DeadManDraws.Presentation.Game
             Changed?.Invoke();
         }
 
-        public void StartMatch(int playerCount, int aiDifficulty)
+        public void ContinueAfterTraitSelection()
         {
-            if (playerCount < 2 || playerCount > 5)
-                throw new ArgumentOutOfRangeException(nameof(playerCount));
-
-            if (!CanStartMatch)
+            if (_flowController == null)
             {
-                Status = "Cannot start a new match.";
-                NotifyChanged();
+                Debug.LogError(
+                    "[GamePresenter] FlowController is NULL.");
+
                 return;
             }
 
-            string error;
+            Debug.Log(
+                "[GamePresenter] " +
+                "Human Trait selected. " +
+                "Continuing game flow.");
 
-            if (!Economy.TryStartMatch(out error))
-            {
-                Status = string.IsNullOrEmpty(error)
-                    ? "Cannot start match."
-                    : error;
-
-                NotifyChanged();
-                return;
-            }
-
-            _turnLog.Clear();
-
-            _flowController = new GameFlowController(
-                _engine,
-                new BasicAiStrategy(aiDifficulty));
-
-            _engine.StartMatch(
-                playerCount,
-                1);
-
-            Status = "Choose your Trait.";
+            Status = "Game started.";
 
             NotifyChanged();
 
