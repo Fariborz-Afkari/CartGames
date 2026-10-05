@@ -1,10 +1,22 @@
 using CardGames.DeadManDraws.Core.Game;
 using CardGames.DeadManDraws.Core.Players;
+using System;
 
 namespace CardGames.DeadManDraws.Core.AI
 {
     public sealed class BasicAiStrategy : IAIStrategy
     {
+        private readonly int _difficulty;
+
+        public BasicAiStrategy()
+            : this(1)
+        {
+        }
+
+        public BasicAiStrategy(int difficulty)
+        {
+            _difficulty = Math.Clamp(difficulty, 0, 2);
+        }
         public GameAction DecideAction(
             GameState state,
             PlayerState actor)

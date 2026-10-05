@@ -19,7 +19,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
         private const int MaxTurnLogEntries = 30;
 
         private readonly PirateGameEngine _engine;
-        private readonly GameFlowController _flowController;
+        private  GameFlowController _flowController;
         private readonly List<string> _turnLog;
 
         public IEconomyService Economy { get; }
@@ -814,6 +814,49 @@ namespace CardGames.DeadManDraws.Presentation.Game
         private void NotifyChanged()
         {
             Changed?.Invoke();
+        }
+
+        public void StartMatch(int playerCount, int aiDifficulty)
+        {
+            if (playerCount < 2 || playerCount > 5)
+                throw new ArgumentOutOfRangeException(nameof(playerCount));
+
+            if (!CanStartMatch)
+            {
+                Status = "Cannot start a new match.";
+                NotifyChanged();
+                return;
+            }
+
+            string error;
+
+            if (!Economy.TryStartMatch(out error))
+            {
+                Status = string.IsNullOrEmpty(error)
+                    ? "Cannot start match."
+                    : error;
+
+                NotifyChanged();
+                return;
+            }
+
+            _turnLog.Clear();
+
+            _flowController = new GameFlowController(
+                _engine,
+                new BasicAiStrategy(aiDifficulty));
+
+            _engine.StartMatch(
+                playerCount,
+                1);
+
+            Status = "Choose your Trait.";
+
+            NotifyChanged();
+
+            _flowController.RunAiTurns();
+
+            NotifyChanged();
         }
     }
 }

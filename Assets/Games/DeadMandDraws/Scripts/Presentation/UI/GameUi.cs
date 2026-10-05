@@ -1,3 +1,5 @@
+using CardGames.DeadManDraws.Core.Players;
+using CardGames.DeadManDraws.Presentation.Game;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,7 +8,6 @@ using System.Reflection;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CardGames.DeadManDraws.Presentation.Game;
 
 namespace CardGames.DeadManDraws.Presentation.UI
 {
@@ -117,9 +118,6 @@ namespace CardGames.DeadManDraws.Presentation.UI
         private void Start()
         {
             Refresh();
-
-            if (_viewModel.CanStartMatch)
-                _viewModel.StartMatch();
         }
 
         private void OnDisable()
@@ -926,6 +924,33 @@ namespace CardGames.DeadManDraws.Presentation.UI
             {
                 return 0;
             }
+        }
+
+        public bool BeginNewMatch(int playerCount, int aiDifficulty)
+        {
+            if (_viewModel == null || !_viewModel.CanStartMatch)
+                return false;
+
+            _viewModel.StartMatch(playerCount, aiDifficulty);
+            return true;
+        }
+
+        public IReadOnlyList<PlayerTrait> TraitOptions
+        {
+            get
+            {
+                return _viewModel != null
+                    ? _viewModel.TraitOptions
+                    : Array.Empty<PlayerTrait>();
+            }
+        }
+
+        public bool SelectTrait(PlayerTrait trait)
+        {
+            if (_viewModel == null)
+                return false;
+
+            return _viewModel.SelectTrait(trait);
         }
     }
 }

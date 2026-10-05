@@ -201,5 +201,9 @@ namespace CardGames.DeadManDraws.Presentation.Game
         {
             Changed?.Invoke();
         }
+        public void StartMatch(int playerCount, int aiDifficulty)
+        {
+            _presenter.StartMatch(playerCount, aiDifficulty);
+        }
     }
 }
