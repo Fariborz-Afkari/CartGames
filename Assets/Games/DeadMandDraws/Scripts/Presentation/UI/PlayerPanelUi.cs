@@ -1,9 +1,9 @@
 using System;
-using System.Reflection;
+using System.Collections.Generic;
+using CardGames.DeadManDraws.Presentation.Game;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using CardGames.DeadManDraws.Presentation.Game;
 
 namespace CardGames.DeadManDraws.Presentation.UI
 {
@@ -12,86 +12,114 @@ namespace CardGames.DeadManDraws.Presentation.UI
         [Header("Content")]
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TMP_Text _scoreText;
-        [SerializeField] private TMP_Text _healthText;
-        [SerializeField] private TMP_Text _resourceText;
         [SerializeField] private Image _avatarImage;
-        [SerializeField] private Button _button;
 
-        [Header("Turn Feedback")]
+        [Header("Turn")]
         [SerializeField] private GameObject _turnGlow;
-        [SerializeField] private GameObject _turnIndicator;
-        [SerializeField] private Animator _animator;
 
-        [Header("Optional State")]
-        [SerializeField] private GameObject _defeatedOverlay;
+        private Button _button;
 
         public event Action Clicked;
 
         private void Awake()
         {
+            ResolveReferences();
+
             if (_button != null)
-                _button.onClick.AddListener(OnClicked);
+            {
+                _button.onClick.RemoveListener(
+                    OnClicked);
+
+                _button.onClick.AddListener(
+                    OnClicked);
+            }
         }
 
-        private void OnDestroy()
+        private void ResolveReferences()
         {
-            if (_button != null)
-                _button.onClick.RemoveListener(OnClicked);
+            TMP_Text[] texts =
+                GetComponentsInChildren<TMP_Text>(
+                    true);
+
+            if (_nameText == null &&
+                texts.Length > 0)
+            {
+                _nameText = texts[0];
+            }
+
+            if (_scoreText == null &&
+                texts.Length > 1)
+            {
+                _scoreText = texts[1];
+            }
+
+            if (_avatarImage == null)
+            {
+                Transform avatar =
+                    FindChildRecursive(
+                        transform,
+                        "Avatar");
+
+                if (avatar != null)
+                {
+                    _avatarImage =
+                        avatar.GetComponent<Image>();
+                }
+            }
+
+            if (_turnGlow == null)
+            {
+                Transform glow =
+                    FindChildRecursive(
+                        transform,
+                        "TurnGlow");
+
+                if (glow != null)
+                    _turnGlow = glow.gameObject;
+            }
+
+            _button =
+                GetComponent<Button>();
         }
 
-        public void Bind(PlayerViewData player, bool isCurrentTurn)
+        public void Bind(
+            PlayerViewData player,
+            bool isCurrentTurn,
+            Sprite avatarSprite = null)
         {
             if (player == null)
                 return;
 
             if (_nameText != null)
-                _nameText.text = player.PlayerName;
-
-            SetOptionalText(
-                _scoreText,
-                ReadMember(player, "Score", "Points"));
-
-            SetOptionalText(
-                _healthText,
-                ReadMember(player, "Health", "HP"));
-
-            SetOptionalText(
-                _resourceText,
-                ReadMember(player, "Resource", "Mana", "Energy"));
-
-            object defeatedValue =
-                ReadMember(player, "IsDefeated", "Defeated");
-
-            bool defeated;
-
-            if (defeatedValue != null)
             {
-                defeated = ToBool(defeatedValue, false);
-            }
-            else
-            {
-                object aliveValue = ReadMember(player, "IsAlive");
-                defeated = aliveValue != null && !ToBool(aliveValue, true);
+                _nameText.text =
+                    player.PlayerName;
             }
 
-            if (_defeatedOverlay != null)
-                _defeatedOverlay.SetActive(defeated);
+            if (_scoreText != null)
+            {
+                _scoreText.text =
+                    player.Score.ToString();
+            }
+
+            if (_avatarImage != null &&
+                avatarSprite != null)
+            {
+                _avatarImage.sprite =
+                    avatarSprite;
+
+                _avatarImage.enabled = true;
+            }
 
             SetTurn(isCurrentTurn);
         }
 
-        public void SetTurn(bool isCurrentTurn)
+        public void SetTurn(
+            bool isCurrentTurn)
         {
             if (_turnGlow != null)
-                _turnGlow.SetActive(isCurrentTurn);
-
-            if (_turnIndicator != null)
-                _turnIndicator.SetActive(isCurrentTurn);
-
-            if (_animator != null)
-            {
-                _animator.SetBool("IsTurn", isCurrentTurn);
-            }
+                _turnGlow.SetActive(
+                    isCurrentTurn);
         }
 
         private void OnClicked()
@@ -99,61 +127,41 @@ namespace CardGames.DeadManDraws.Presentation.UI
             Clicked?.Invoke();
         }
 
-        private static void SetOptionalText(TMP_Text target, object value)
+        private static Transform FindChildRecursive(
+            Transform parent,
+            string childName)
         {
-            if (target == null)
-                return;
-
-            target.text = value == null ? string.Empty : value.ToString();
-        }
-
-        private static object ReadMember(object source, params string[] names)
-        {
-            if (source == null)
+            if (parent == null)
                 return null;
 
-            Type type = source.GetType();
+            if (parent.name == childName)
+                return parent;
 
-            foreach (string name in names)
+            for (int i = 0;
+                 i < parent.childCount;
+                 i++)
             {
-                PropertyInfo property = type.GetProperty(
-                    name,
-                    BindingFlags.Instance |
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic);
+                Transform result =
+                    FindChildRecursive(
+                        parent.GetChild(i),
+                        childName);
 
-                if (property != null)
-                    return property.GetValue(source);
-
-                FieldInfo field = type.GetField(
-                    name,
-                    BindingFlags.Instance |
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic);
-
-                if (field != null)
-                    return field.GetValue(source);
+                if (result != null)
+                    return result;
             }
 
             return null;
         }
 
-        private static bool ToBool(object value, bool fallback)
+        private void OnDestroy()
         {
-            if (value == null)
-                return fallback;
-
-            if (value is bool boolValue)
-                return !boolValue;
-
-            try
+            if (_button != null)
             {
-                return Convert.ToBoolean(value);
+                _button.onClick.RemoveListener(
+                    OnClicked);
             }
-            catch
-            {
-                return fallback;
-            }
+
+            Clicked = null;
         }
     }
 }

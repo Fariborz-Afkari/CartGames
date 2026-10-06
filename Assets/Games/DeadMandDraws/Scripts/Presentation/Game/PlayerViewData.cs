@@ -18,6 +18,8 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public PlayerTrait Trait { get; }
 
+        public int AvatarIndex { get; }
+
         public PlayerViewData(
             int playerId,
             string playerName,
@@ -25,7 +27,8 @@ namespace CardGames.DeadManDraws.Presentation.Game
             int score,
             int bankCardCount,
             int playAreaCardCount,
-            PlayerTrait trait)
+            PlayerTrait trait,
+            int avatarIndex)
         {
             PlayerId = playerId;
             PlayerName = playerName;
@@ -34,6 +37,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
             BankCardCount = bankCardCount;
             PlayAreaCardCount = playAreaCardCount;
             Trait = trait;
+            AvatarIndex = avatarIndex;
         }
     }
 }

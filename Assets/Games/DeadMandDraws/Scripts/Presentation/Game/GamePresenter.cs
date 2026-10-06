@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using CardGames.DeadManDraws.Core.AI;
 using CardGames.DeadManDraws.Core.Cards;
 using CardGames.DeadManDraws.Core.Game;
@@ -7,6 +5,9 @@ using CardGames.DeadManDraws.Core.Players;
 using CardGames.DeadManDraws.Platform.Economy;
 using CardGames.DeadManDraws.Platform.Iap;
 using CardGames.DeadManDraws.Platform.Storage;
+using CardGames.Managers;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CardGames.DeadManDraws.Presentation.Game
@@ -14,13 +15,13 @@ namespace CardGames.DeadManDraws.Presentation.Game
     public sealed class GamePresenter : IDisposable
     {
         private const int HumanPlayerId = 0;
-        private const int PlayerCount = 4;
-        private const int DeckCopies = 1;
         private const int CoinsPerPurchase = 10;
         private const int MaxTurnLogEntries = 30;
 
         private readonly PirateGameEngine _engine;
-        private  GameFlowController _flowController;
+
+        private GameFlowController _flowController;
+
         private readonly List<string> _turnLog;
 
         public IEconomyService Economy { get; }
@@ -70,6 +71,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
                 OnEngineEvent;
         }
 
+        // ============================================================
+        // STATE
+        // ============================================================
+
         public bool IsMatchRunning
         {
             get
@@ -83,7 +88,6 @@ namespace CardGames.DeadManDraws.Presentation.Game
         {
             get
             {
-                Debug.Log("---- Coins = "+ Coins + "  "+ IsMatchRunning);
                 return Coins >= 1 &&
                        !IsMatchRunning;
             }
@@ -91,7 +95,24 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public int Coins
         {
-            get { return Economy.Coins; }
+            get
+            {
+                return Economy.Coins;
+            }
+        }
+
+        public int Score
+        {
+            get
+            {
+                PlayerState player =
+                    _engine.State.FindPlayer(
+                        HumanPlayerId);
+
+                return player == null
+                    ? 0
+                    : GameRules.CalculateScore(player);
+            }
         }
 
         public bool IsPlayerTurn
@@ -115,12 +136,18 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public bool IsGameOver
         {
-            get { return _engine.State.IsGameOver; }
+            get
+            {
+                return _engine.State.IsGameOver;
+            }
         }
 
         public int? WinnerId
         {
-            get { return _engine.State.WinnerId; }
+            get
+            {
+                return _engine.State.WinnerId;
+            }
         }
 
         public string CurrentPlayerName
@@ -147,20 +174,34 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public int TurnNumber
         {
-            get { return _engine.State.TurnNumber; }
+            get
+            {
+                return _engine.State.TurnNumber;
+            }
         }
 
         public int DeckCount
         {
-            get { return _engine.State.Deck.Count; }
+            get
+            {
+                return _engine.State.Deck.Count;
+            }
         }
 
         public int DiscardCount
         {
-            get { return _engine.State.DiscardPile.Count; }
+            get
+            {
+                return _engine.State.DiscardPile.Count;
+            }
         }
 
-        public IReadOnlyList<PlayerTrait>GetHumanTraitOptions()
+        // ============================================================
+        // TRAIT
+        // ============================================================
+
+        public IReadOnlyList<PlayerTrait>
+            GetHumanTraitOptions()
         {
             PlayerState player =
                 _engine.State.FindPlayer(
@@ -186,70 +227,84 @@ namespace CardGames.DeadManDraws.Presentation.Game
             }
         }
 
+        // ============================================================
+        // START MATCH
+        // ============================================================
+
         public void StartMatch(
-    int playerCount,
-    int aiDifficulty)
+            int playerCount,
+            int aiDifficulty)
         {
-            Debug.Log("---- StartMatch 0");
-            if (playerCount < 2 || playerCount > 5)
+            if (playerCount < 2 ||
+                playerCount > 5)
+            {
                 throw new ArgumentOutOfRangeException(
                     nameof(playerCount));
-            Debug.Log("---- StartMatch 03");
+            }
+
             if (!CanStartMatch)
             {
-                Debug.Log("---- StartMatch 04");
-                Status = "Cannot start a new match.";
+                Status =
+                    Coins < 1
+                        ? "Not enough coins."
+                        : "Cannot start a new match.";
+
                 NotifyChanged();
                 return;
             }
 
             string error;
 
-            if (!Economy.TryStartMatch(out error))
+            if (!Economy.TryStartMatch(
+                    out error))
             {
-                Debug.Log("---- StartMatch 05");
-                Status = string.IsNullOrEmpty(error)
-                    ? "Cannot start match."
-                    : error;
+                Status =
+                    string.IsNullOrEmpty(error)
+                        ? "Cannot start match."
+                        : error;
 
                 NotifyChanged();
                 return;
             }
 
             _turnLog.Clear();
-            Debug.Log("---- StartMatch 1");
+
             _flowController =
                 new GameFlowController(
                     _engine,
-                    new BasicAiStrategy(aiDifficulty));
-            Debug.Log("---- StartMatch 11");
+                    new BasicAiStrategy(
+                        aiDifficulty));
+
             _engine.StartMatch(
                 playerCount,
-                1);
+                1,
+                PlayerData.PlayerName);
 
-            /*
-             * در این مرحله بازی هنوز نباید وارد Turnهای AI شود.
-             *
-             * Engine در StartMatch دو Trait تصادفی برای
-             * بازیکن ایجاد کرده و بازی در TraitSelection است.
-             */
+            Status =
+                "Choose your Trait.";
 
-            Status = "Choose your Trait.";
+            AddTurnLog(
+                "Choose your Trait.");
 
             NotifyChanged();
-
-            /*
-             * عمداً اینجا RunAiTurns() را اجرا نمی‌کنیم.
-             *
-             * بعد از انتخاب Trait توسط بازیکن انسانی،
-             * ContinueAfterTraitSelection() فراخوانی می‌شود.
-             */
         }
+
+        // ============================================================
+        // TRAIT SELECTION
+        // ============================================================
+
         public bool SelectTrait(
             PlayerTrait trait)
         {
             if (!IsTraitSelection)
+            {
+                Status =
+                    "Trait selection is not active.";
+
+                NotifyChanged();
+
                 return false;
+            }
 
             bool result =
                 _engine.SubmitAction(
@@ -257,26 +312,36 @@ namespace CardGames.DeadManDraws.Presentation.Game
                         HumanPlayerId,
                         trait));
 
-            if (result)
-            {
-                Status =
-                    "Trait selected.";
-            }
-            else
+            if (!result)
             {
                 Status =
                     "Invalid Trait selection.";
+
+                NotifyChanged();
+
+                return false;
             }
 
-            if (result)
-            {
-                _flowController.RunAiTurns();
-            }
+            Status =
+                "Trait selected.";
+
+            AddTurnLog(
+                "You selected " + trait + ".");
+
+            /*
+             * AIها Trait خودشان را انتخاب می‌کنند
+             * و اگر نوبت AI باشد، بازی ادامه پیدا می‌کند.
+             */
+            _flowController.RunAiTurns();
 
             NotifyChanged();
 
-            return result;
+            return true;
         }
+
+        // ============================================================
+        // PLAYERS
+        // ============================================================
 
         public IReadOnlyList<PlayerViewData>
             GetPlayers()
@@ -291,6 +356,11 @@ namespace CardGames.DeadManDraws.Presentation.Game
                 PlayerState player =
                     _engine.State.Players[i];
 
+                int avatarIndex =
+                    player.IsHuman
+                        ? PlayerData.AvatarIndex
+                        : player.Id;
+
                 result.Add(
                     new PlayerViewData(
                         player.Id,
@@ -300,11 +370,16 @@ namespace CardGames.DeadManDraws.Presentation.Game
                             player),
                         player.Bank.Count,
                         player.PlayArea.Count,
-                        player.Trait));
+                        player.Trait,
+                        avatarIndex));
             }
 
             return result;
         }
+
+        // ============================================================
+        // HUMAN CARDS
+        // ============================================================
 
         public IReadOnlyList<CardViewData>
             GetPlayerPlayArea()
@@ -375,15 +450,12 @@ namespace CardGames.DeadManDraws.Presentation.Game
         public IReadOnlyList<CardViewData>
             GetPlayerHand()
         {
-            /*
-             * Compatibility name for the current UI.
-             *
-             * The new game has no traditional Hand.
-             * Cards being displayed to the player are
-             * the current PlayArea cards.
-             */
             return GetPlayerPlayArea();
         }
+
+        // ============================================================
+        // CARD INTERACTION
+        // ============================================================
 
         public CardInteraction GetCardInteraction(
             int cardId)
@@ -426,11 +498,8 @@ namespace CardGames.DeadManDraws.Presentation.Game
                         PlayerState target =
                             _engine.State.Players[i];
 
-                        if (target.Id ==
-                            player.Id)
-                        {
+                        if (target.Id == player.Id)
                             continue;
-                        }
 
                         targets.Add(
                             new TargetViewData(
@@ -452,6 +521,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
             }
         }
 
+        // ============================================================
+        // DRAW
+        // ============================================================
+
         public bool DrawCard()
         {
             if (!IsPlayerTurn)
@@ -460,6 +533,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
                     "It is not your turn.";
 
                 NotifyChanged();
+
                 return false;
             }
 
@@ -478,6 +552,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
             return result;
         }
 
+        // ============================================================
+        // BANK / END TURN
+        // ============================================================
+
         public bool StopDrawing()
         {
             if (!IsPlayerTurn)
@@ -486,6 +564,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
                     "It is not your turn.";
 
                 NotifyChanged();
+
                 return false;
             }
 
@@ -496,17 +575,17 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
             if (result)
             {
-                _flowController.RunAiTurns();
-
                 Status =
                     IsGameOver
                         ? GetGameOverStatus()
-                        : "Turn ended.";
+                        : "Cards collected. Turn ended.";
+
+                _flowController.RunAiTurns();
             }
             else
             {
                 Status =
-                    "Cannot end drawing.";
+                    "Draw at least one card first.";
             }
 
             NotifyChanged();
@@ -514,13 +593,15 @@ namespace CardGames.DeadManDraws.Presentation.Game
             return result;
         }
 
-        /*
-         * Compatibility method for the current UI.
-         *
-         * Card effects such as Cannon/Sword require
-         * explicit target/card selection and are handled
-         * through the corresponding Core actions.
-         */
+        public void EndTurn()
+        {
+            StopDrawing();
+        }
+
+        // ============================================================
+        // CARD PLAY
+        // ============================================================
+
         public bool PlayCard(
             int cardId,
             int? targetPlayerId = null)
@@ -534,9 +615,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
             if (!interaction.RequiresTarget)
             {
                 Status =
-                    "Draw or stop drawing to resolve cards.";
+                    "This card does not require a target.";
 
                 NotifyChanged();
+
                 return false;
             }
 
@@ -570,23 +652,25 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
             if (result)
             {
+                Status =
+                    "Card action resolved.";
+
                 _flowController.RunAiTurns();
             }
-
-            Status =
-                result
-                    ? "Card action resolved."
-                    : "Card action failed.";
+            else
+            {
+                Status =
+                    "Card action failed.";
+            }
 
             NotifyChanged();
 
             return result;
         }
 
-        public void EndTurn()
-        {
-            StopDrawing();
-        }
+        // ============================================================
+        // COINS
+        // ============================================================
 
         public void BuyCoins()
         {
@@ -600,6 +684,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
                             "Purchase failed.";
 
                         NotifyChanged();
+
                         return;
                     }
 
@@ -612,6 +697,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
                     NotifyChanged();
                 });
         }
+
+        // ============================================================
+        // CARD VIEW
+        // ============================================================
 
         private CardViewData CreateCardViewData(
             Card card)
@@ -664,19 +753,9 @@ namespace CardGames.DeadManDraws.Presentation.Game
             }
         }
 
-        private string GetGameOverStatus()
-        {
-            if (!WinnerId.HasValue)
-                return "Match ended.";
-
-            PlayerState winner =
-                _engine.State.FindPlayer(
-                    WinnerId.Value);
-
-            return winner == null
-                ? "Match ended."
-                : winner.Name + " wins.";
-        }
+        // ============================================================
+        // EVENTS / NOTIFICATION
+        // ============================================================
 
         private void OnEngineEvent(
             string message)
@@ -684,8 +763,13 @@ namespace CardGames.DeadManDraws.Presentation.Game
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
-            AddTurnLog(
-                FormatEvent(message));
+            string formatted =
+                FormatEvent(message);
+
+            AddTurnLog(formatted);
+
+            Status =
+                formatted;
 
             NotifyChanged();
         }
@@ -699,8 +783,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
             if (parts.Length == 0)
                 return message;
 
-            if (parts[0] ==
-                "CardDrawn" &&
+            if (parts[0] == "MatchStarted")
+                return "Match started.";
+
+            if (parts[0] == "CardDrawn" &&
                 parts.Length >= 3)
             {
                 PlayerState player =
@@ -714,31 +800,17 @@ namespace CardGames.DeadManDraws.Presentation.Game
                 if (player != null &&
                     card != null)
                 {
-                    return player.Name +
-                           " drew " +
-                           card.Definition.Name +
-                           " (" +
-                           card.Value +
-                           ").";
+                    return
+                        player.Name +
+                        " drew " +
+                        card.Definition.Name +
+                        ".";
                 }
+
+                return "Card drawn.";
             }
 
-            if (parts[0] ==
-                "TurnStarted" &&
-                parts.Length >= 2)
-            {
-                PlayerState player =
-                    _engine.State.FindPlayer(
-                        ParseInt(parts[1]));
-
-                return player == null
-                    ? "Turn started."
-                    : player.Name +
-                      "'s turn.";
-            }
-
-            if (parts[0] ==
-                "TraitSelected" &&
+            if (parts[0] == "TraitSelected" &&
                 parts.Length >= 3)
             {
                 PlayerState player =
@@ -753,11 +825,54 @@ namespace CardGames.DeadManDraws.Presentation.Game
                       ".";
             }
 
+            if (parts[0] == "TurnStarted" &&
+                parts.Length >= 2)
+            {
+                PlayerState player =
+                    _engine.State.FindPlayer(
+                        ParseInt(parts[1]));
+
+                return player == null
+                    ? "Turn started."
+                    : player.Name +
+                      "'s turn.";
+            }
+
+            if (parts[0] == "Bust" &&
+                parts.Length >= 2)
+            {
+                PlayerState player =
+                    _engine.State.FindPlayer(
+                        ParseInt(parts[1]));
+
+                return player == null
+                    ? "Bust!"
+                    : player.Name +
+                      " busted!";
+            }
+
+            if (parts[0] == "BustResolved" &&
+                parts.Length >= 2)
+            {
+                return "Bust resolved.";
+            }
+
+            if (parts[0] == "CannonRequiresTarget")
+                return "Choose a target for Cannon.";
+
+            if (parts[0] == "HookRequiresSelection")
+                return "Choose a card for Hook.";
+
+            if (parts[0] == "SwordRequiresTarget")
+                return "Choose a target for Sword.";
+
+            if (parts[0] == "ChestReady")
+                return "Chest and Key are ready.";
+
             return message;
         }
 
-        private Card FindCardById(
-            int id)
+        private Card FindCardById(int id)
         {
             for (int i = 0;
                  i < _engine.State.DiscardPile.Count;
@@ -793,19 +908,15 @@ namespace CardGames.DeadManDraws.Presentation.Game
             return null;
         }
 
-        private static int ParseInt(
-            string value)
+        private int ParseInt(string value)
         {
             int result;
 
-            if (int.TryParse(
-                    value,
-                    out result))
-            {
-                return result;
-            }
-
-            return -1;
+            return int.TryParse(
+                value,
+                out result)
+                ? result
+                : -1;
         }
 
         private void AddTurnLog(
@@ -823,33 +934,24 @@ namespace CardGames.DeadManDraws.Presentation.Game
             }
         }
 
+        private string GetGameOverStatus()
+        {
+            if (!WinnerId.HasValue)
+                return "Match ended.";
+
+            PlayerState winner =
+                _engine.State.FindPlayer(
+                    WinnerId.Value);
+
+            return winner == null
+                ? "Match ended."
+                : winner.Name +
+                  " wins.";
+        }
+
         private void NotifyChanged()
         {
             Changed?.Invoke();
-        }
-
-        public void ContinueAfterTraitSelection()
-        {
-            if (_flowController == null)
-            {
-                Debug.LogError(
-                    "[GamePresenter] FlowController is NULL.");
-
-                return;
-            }
-
-            Debug.Log(
-                "[GamePresenter] " +
-                "Human Trait selected. " +
-                "Continuing game flow.");
-
-            Status = "Game started.";
-
-            NotifyChanged();
-
-            _flowController.RunAiTurns();
-
-            NotifyChanged();
         }
     }
 }

@@ -25,76 +25,57 @@ namespace CardGames.DeadManDraws.Core.Game
         }
 
         public void StartMatch(
-            int playerCount,
-            int deckCopies = 1)
+    int playerCount,
+    int deckCopies = 1,
+    string humanPlayerName = "You")
         {
-            Debug.Log("---- StartMatch");
-            if (playerCount < 2 ||
-                playerCount > 5)
-            {
+            if (playerCount < 1)
                 throw new ArgumentOutOfRangeException(
                     nameof(playerCount),
-                    "Player count must be between 2 and 5.");
-            }
+                    "Player count must be at least 1.");
 
-            if (deckCopies <= 0)
-                deckCopies = 1;
+            if (deckCopies < 1)
+                throw new ArgumentOutOfRangeException(
+                    nameof(deckCopies),
+                    "Deck copies must be at least 1.");
 
-            State.Phase =
-                GamePhase.Setup;
+            // توجه:
+            // State.Players از نوع IReadOnlyList است و Clear ندارد.
+            // بنابراین اینجا نباید State.Players.Clear() صدا زده شود.
 
-            State.IsGameOver = false;
-            State.WinnerId = null;
-            State.TurnNumber = 0;
+            CreatePlayers(
+                playerCount,
+                humanPlayerName);
 
-            CreatePlayers(playerCount);
+            //BuildDeck(deckCopies);
 
-            List<Card> discard;
-
-            List<Card> deck =
-                PirateCardFactory.CreateDeck(
-                    deckCopies,
-                    out discard);
-
-            State.Deck.Clear();
-
-            State.Deck.AddRange(deck);
-
-            for (int i = 0;
-                 i < discard.Count;
-                 i++)
-            {
-                State.AddToDiscard(
-                    discard[i]);
-            }
-
-            State.Deck.Shuffle(_random);
-            Debug.Log("---- AssignTraitOptions -- pre");
             AssignTraitOptions();
 
-            State.Phase =
-                GamePhase.TraitSelection;
+            State.CurrentPlayerId = 0;
 
             Emit("MatchStarted");
-
-            if (AllTraitsSelected())
-            {
-                StartFirstTurn();
-            }
         }
 
-        private void CreatePlayers(int count)
+        private void CreatePlayers(int count,string humanPlayerName)
         {
+            
+
             for (int i = 0;
                  i < count;
                  i++)
             {
+                string playerName =
+                    i == 0
+                        ? string.IsNullOrWhiteSpace(
+                            humanPlayerName)
+                            ? "You"
+                            : humanPlayerName
+                        : "Player " + (i + 1);
+
                 PlayerState player =
                     new PlayerState(
                         i,
-                        i == 0
-                            ? "You"
-                            : "Player " + (i + 1),
+                        playerName,
                         i == 0);
 
                 State.AddPlayer(player);
@@ -782,14 +763,33 @@ namespace CardGames.DeadManDraws.Core.Game
         private void MovePlayAreaToBank(
             PlayerState player)
         {
+            if (player == null)
+                return;
+
+            int count =
+                player.PlayArea.Count;
+
+            if (count <= 0)
+                return;
+
             for (int i = 0;
-                 i < player.PlayArea.Count;)
+                 i < count;
+                 i++)
             {
                 Card card =
-                    player.PlayArea.RemoveAt(i);
+                    player.PlayArea.Cards[i];
 
-                player.Bank.Add(card);
+                if (card != null)
+                    player.Bank.Add(card);
             }
+
+            player.PlayArea.Clear();
+
+            Emit(
+                "CardsBanked:" +
+                player.Id +
+                ":" +
+                count);
         }
 
         private void ResolveChestReward(
@@ -1181,9 +1181,15 @@ namespace CardGames.DeadManDraws.Core.Game
         private void ResolveEndTurnEffects(
             PlayerState player)
         {
+            if (player == null)
+                return;
+
             /*
-             * Chest reward باید قبل از پایان
-             * کامل Turn بررسی شود.
+             * PlayArea در Bank شدن قبلاً
+             * توسط BankPlayArea مدیریت شده است.
+             *
+             * این متد محل اجرای Traitها و
+             * Effectهای پایان Turn است.
              */
         }
 

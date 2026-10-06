@@ -895,7 +895,25 @@ namespace CardGames.DeadManDraws.Presentation
                     playerCount,
                     difficulty);
 
+            if (!started)
+            {
+                Debug.LogError(
+                    "[DeadManDrawMenuController] " +
+                    "GameUi.BeginNewMatch() returned FALSE.");
 
+                return;
+            }
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                $"Match started. " +
+                $"TraitOptions = {_gameUi.TraitOptions.Count}");
+
+            SaveGameSetup(
+                playerCount,
+                difficulty);
+
+            ShowTraitSelection();
             if (!started)
             {
                 Debug.LogError(
@@ -1071,13 +1089,14 @@ namespace CardGames.DeadManDraws.Presentation
         }
 
 
-        private void SelectTrait(PlayerTrait trait)
+        private void SelectTrait(
+     PlayerTrait trait)
         {
             if (trait == PlayerTrait.None)
             {
                 Debug.LogError(
                     "[DeadManDrawMenuController] " +
-                    "Trying to select None Trait.");
+                    "Cannot select None Trait.");
 
                 return;
             }
@@ -1107,11 +1126,32 @@ namespace CardGames.DeadManDraws.Presentation
                 "[DeadManDrawMenuController] " +
                 $"Trait selected: {trait}");
 
+            /*
+             * تصویر Trait انتخاب‌شده برای صفحه اصلی.
+             */
+            TraitVisualData data =
+                GetTraitData(trait);
+
+            if (data != null &&
+                data.image != null)
+            {
+                _gameUi.SetSelectedTraitVisual(
+                    data.image);
+            }
+
             if (_traitHelpPanel != null)
                 _traitHelpPanel.SetActive(false);
 
             if (_selectTraitPanel != null)
                 _selectTraitPanel.SetActive(false);
+
+            /*
+             * GamePresenter.SelectTrait()
+             * خودش RunAiTurns() را انجام داده است.
+             *
+             * بنابراین ContinueAfterTraitSelection
+             * نباید دوباره اجرا شود.
+             */
         }
 
         // ============================================================
@@ -1131,35 +1171,17 @@ namespace CardGames.DeadManDraws.Presentation
 
 
         private void ShowTraitHelp(
-            PlayerTrait trait)
+    PlayerTrait trait)
         {
             if (_traitHelpPanel == null)
-            {
-                Debug.LogError(
-                    "[DeadManDrawMenuController] " +
-                    "TraitHelpPanel is NULL.");
-
                 return;
-            }
-
-
-            /*
-             * نکته مهم:
-             *
-             * SelectTraitPanel را Hide نمی‌کنیم.
-             *
-             * TraitHelpPanel روی آن نمایش داده می‌شود.
-             */
 
             UpdateTraitHelpText(trait);
 
-
+            /*
+             * SelectTraitPanel را Hide نمی‌کنیم.
+             */
             _traitHelpPanel.SetActive(true);
-
-
-            Debug.Log(
-                "[DeadManDrawMenuController] " +
-                $"TraitHelpPanel opened for '{trait}'.");
         }
 
 
@@ -1203,16 +1225,9 @@ namespace CardGames.DeadManDraws.Presentation
             if (_traitHelpPanel != null)
                 _traitHelpPanel.SetActive(false);
 
-
             /*
-             * SelectTraitPanel عمداً دوباره فعال نمی‌شود،
-             * چون از ابتدا فعال باقی مانده است.
+             * SelectTraitPanel همچنان فعال است.
              */
-
-            Debug.Log(
-                "[DeadManDrawMenuController] " +
-                "TraitHelpPanel closed. " +
-                "SelectTraitPanel remains visible.");
         }
 
 

@@ -1,134 +1,184 @@
-using CardGames.DeadManDraws.Core.Players;
-using CardGames.DeadManDraws.Presentation.Game;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
+using CardGames.DeadManDraws.Core.Players;
+using CardGames.DeadManDraws.Presentation.Game;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CardGames.DeadManDraws.Presentation.UI
 {
-    /// <summary>
-    /// Main UI controller for the card-game board.
-    ///
-    /// Important:
-    /// - GameUi only talks to GameViewModel.
-    /// - GamePresenter/GameEngine should call the public animation hooks
-    ///   when a state transition actually happens.
-    /// - Card artwork/background remains inside CardWidget/card prefabs.
-    /// </summary>
     public sealed class GameUi : MonoBehaviour
     {
+        // ============================================================
+        // STATUS
+        // ============================================================
+
         [Header("Status")]
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private TMP_Text _turnText;
+
+        // ============================================================
+        // PLAYERS
+        // ============================================================
 
         [Header("Players")]
         [SerializeField] private Transform _playersContainer;
         [SerializeField] private PlayerPanelUi _playerPanelPrefab;
 
-        [Header("Hand")]
-        [SerializeField] private Transform _handContainer;
-        [SerializeField] private CardWidget _cardWidgetPrefab;
+        // ============================================================
+        // BOARD
+        // ============================================================
 
-        [Header("Board - 8 Slots")]
-        [SerializeField] private BoardCardSlotUi[] _boardSlots = new BoardCardSlotUi[8];
+        [Header("Board")]
+        [SerializeField] private BoardCardSlotUi[] _boardSlots;
 
-        [Header("Decks")]
+        // ============================================================
+        // BUTTONS
+        // ============================================================
+
+        [Header("Buttons")]
         [SerializeField] private Button _drawDeckButton;
-        [SerializeField] private RectTransform _drawDeckAnchor;
-        [SerializeField] private Button _burnDeckButton;
-        [SerializeField] private RectTransform _burnDeckAnchor;
-
-        [Header("Player Banks - 6 Blue Piles")]
-        [SerializeField] private RectTransform[] _playerBankAnchors = new RectTransform[6];
-
-        [Header("Actions")]
-        [SerializeField] private Button _startButton;
-        [SerializeField] private Button _endTurnButton;
-        [SerializeField] private Button _buyCoinsButton;
         [SerializeField] private Button _collectCardsButton;
+        [SerializeField] private Button _buyCoinsButton;
 
-        [Header("Economy")]
+        // ============================================================
+        // TEXT
+        // ============================================================
+
+        [Header("Texts")]
         [SerializeField] private TMP_Text _coinsText;
         [SerializeField] private TMP_Text _scoreText;
-
-        [Header("Deck")]
         [SerializeField] private TMP_Text _deckText;
         [SerializeField] private TMP_Text _burnText;
-
-        [Header("Log")]
         [SerializeField] private TMP_Text _turnLogText;
 
-        [Header("Target Selection")]
+        // ============================================================
+        // TRAIT
+        // ============================================================
+
+        [Header("Current Trait")]
+        [SerializeField] private Image _traitImage;
+
+        // ============================================================
+        // NOTIFICATION
+        // ============================================================
+
+        [Header("Notification")]
+        [SerializeField] private CanvasGroup _notificationGroup;
+        [SerializeField] private TMP_Text _notificationText;
+
+        [SerializeField]
+        private float _notificationDuration = 1.8f;
+
+        // ============================================================
+        // BANKS
+        // ============================================================
+
+        [Header("Player Banks")]
+        [SerializeField]
+        private RectTransform[] _playerBankAnchors;
+
+        // ============================================================
+        // TARGET
+        // ============================================================
+
+        [Header("Target")]
         [SerializeField] private GameObject _targetPanel;
         [SerializeField] private Transform _targetContainer;
         [SerializeField] private Button _targetButtonPrefab;
 
-        [Header("Popup Panels")]
-        [SerializeField] private GameObject _playerPanelRoot;
-        [SerializeField] private PlayerDetailsPanelUi _playerDetailsPanel;
-        [SerializeField] private GameObject _cardsPanelRoot;
-        [SerializeField] private CardCollectionPanelUi _cardCollectionPanel;
+        // ============================================================
+        // CARDS
+        // ============================================================
 
-        [Header("Animation")]
-        [SerializeField, Min(0.05f)] private float _drawDuration = 0.42f;
-        [SerializeField, Min(0.05f)] private float _burnDuration = 0.45f;
-        [SerializeField, Min(0.05f)] private float _collectDuration = 0.55f;
-        [SerializeField, Min(0.05f)] private float _playerReorderDuration = 0.35f;
-        [SerializeField] private AnimationCurve _moveCurve =
-            AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [Header("Cards")]
+        [SerializeField] private Transform _handContainer;
+        [SerializeField] private CardWidget _cardWidgetPrefab;
 
-        [Header("Audio")]
-        [SerializeField] private UiAudio _uiAudio;
+        // ============================================================
+        // RUNTIME
+        // ============================================================
 
-        public IReadOnlyList<PlayerTrait> TraitOptions
+        private GameViewModel _viewModel;
+
+        private readonly Dictionary<int, PlayerPanelUi>
+            _playerPanels =
+                new Dictionary<int, PlayerPanelUi>();
+
+        private Coroutine _notificationRoutine;
+
+        private int? _selectedCardId;
+
+        private string _lastNotification;
+
+        // ============================================================
+        // TRAIT
+        // ============================================================
+
+        public IReadOnlyList<PlayerTrait>
+            TraitOptions
         {
             get
             {
                 if (_viewModel == null)
-                {
-                    Debug.LogError(
-                        "[GameUi] GameViewModel is NULL.");
-
                     return Array.Empty<PlayerTrait>();
-                }
 
-                IReadOnlyList<PlayerTrait> options =
-                    _viewModel.TraitOptions;
-
-                Debug.Log(
-                    $"[GameUi] TraitOptions count = " +
-                    $"{(options != null ? options.Count : -1)}");
-
-                return options ?? Array.Empty<PlayerTrait>();
+                return _viewModel.TraitOptions
+                       ?? Array.Empty<PlayerTrait>();
             }
         }
-        private GameViewModel _viewModel;
-        private readonly Dictionary<int, PlayerPanelUi> _playerPanels = new();
-        private readonly List<Coroutine> _animations = new();
-        private int? _selectedCardId;
+        public bool SelectTrait(PlayerTrait trait)
+        {
+            if (_viewModel == null)
+            {
+                Debug.LogError(
+                    "[GameUi] GameViewModel is NULL.");
+
+                return false;
+            }
+
+            if (trait == PlayerTrait.None)
+            {
+                Debug.LogError(
+                    "[GameUi] Cannot select None Trait.");
+
+                return false;
+            }
+
+            bool result =
+                _viewModel.SelectTrait(trait);
+
+            Debug.Log(
+                $"[GameUi] SelectTrait: " +
+                $"{trait} -> {result}");
+
+            return result;
+        }
+        // ============================================================
+        // UNITY
+        // ============================================================
 
         private void Awake()
         {
-            _viewModel = new GameViewModel();
+            _viewModel =
+                new GameViewModel();
+
+            ResolveSceneReferences();
 
             RegisterListeners();
 
-            if (_drawDeckButton != null)
-                _drawDeckButton.onClick.AddListener(OnDrawDeckClicked);
-
-            if (_burnDeckButton != null)
-                _burnDeckButton.onClick.AddListener(OnBurnDeckClicked);
-
-            if (_collectCardsButton != null)
-                _collectCardsButton.onClick.AddListener(OnCollectCardsClicked);
-
             HideTargetPanel();
-            CloseAllPopups();
+
+            if (_notificationGroup != null)
+            {
+                _notificationGroup.alpha = 0f;
+                _notificationGroup.gameObject.SetActive(false);
+            }
+
+            ClearInitialBanks();
         }
 
         private void OnEnable()
@@ -152,16 +202,9 @@ namespace CardGames.DeadManDraws.Presentation.UI
         {
             UnregisterListeners();
 
-            if (_drawDeckButton != null)
-                _drawDeckButton.onClick.RemoveListener(OnDrawDeckClicked);
-
-            if (_burnDeckButton != null)
-                _burnDeckButton.onClick.RemoveListener(OnBurnDeckClicked);
-
-            if (_collectCardsButton != null)
-                _collectCardsButton.onClick.RemoveListener(OnCollectCardsClicked);
-
-            StopAllAnimations();
+            if (_notificationRoutine != null)
+                StopCoroutine(
+                    _notificationRoutine);
 
             if (_viewModel != null)
             {
@@ -170,216 +213,603 @@ namespace CardGames.DeadManDraws.Presentation.UI
             }
         }
 
+        // ============================================================
+        // SCENE REFERENCES
+        // ============================================================
+
+        private void ResolveSceneReferences()
+        {
+            if (_statusText == null)
+            {
+                _statusText =
+                    FindText(
+                        "TopArea",
+                        "StatusText");
+            }
+
+            if (_playersContainer == null)
+            {
+                _playersContainer =
+                    FindTransform(
+                        "PlayerArea");
+            }
+
+            if (_drawDeckButton == null)
+            {
+                _drawDeckButton =
+                    FindButton(
+                        "DrawDeck");
+            }
+
+            if (_collectCardsButton == null)
+            {
+                _collectCardsButton =
+                    FindButton(
+                        "CollectButton");
+            }
+
+            if (_coinsText == null)
+            {
+                _coinsText =
+                    FindText(
+                        "Coins",
+                        "Text");
+            }
+
+            if (_scoreText == null)
+            {
+                _scoreText =
+                    FindText(
+                        "Score",
+                        "Text");
+            }
+
+            if (_deckText == null)
+            {
+                _deckText =
+                    FindText(
+                        "DrawDeck",
+                        "Text");
+            }
+
+            if (_burnText == null)
+            {
+                _burnText =
+                    FindText(
+                        "BurnDeck",
+                        "Text");
+            }
+
+            if (_traitImage == null)
+            {
+                Transform trait =
+                    FindTransform("Trait");
+
+                if (trait != null)
+                    _traitImage =
+                        trait.GetComponent<Image>();
+            }
+
+            if (_notificationGroup == null)
+            {
+                Transform notification =
+                    FindTransform(
+                        "Notification");
+
+                if (notification != null)
+                {
+                    _notificationGroup =
+                        notification.GetComponent<
+                            CanvasGroup>();
+                }
+            }
+
+            if (_notificationText == null)
+            {
+                _notificationText =
+                    FindText(
+                        "Notification",
+                        "Text");
+            }
+
+            if (_handContainer == null)
+            {
+                Transform hand =
+                    FindTransform(
+                        "Hand");
+
+                if (hand != null)
+                    _handContainer = hand;
+            }
+
+            if (_targetPanel == null)
+            {
+                Transform target =
+                    FindTransform(
+                        "TargetPanel");
+
+                if (target != null)
+                    _targetPanel =
+                        target.gameObject;
+            }
+
+            ResolveBoardSlots();
+
+            ResolveBankAnchors();
+
+            ResolvePlayerPanels();
+        }
+
+        private void ResolvePlayerPanels()
+        {
+            if (_playersContainer == null)
+                return;
+
+            PlayerPanelUi[] existing =
+                _playersContainer
+                    .GetComponentsInChildren<
+                        PlayerPanelUi>(
+                        true);
+
+            for (int i = 0;
+                 i < existing.Length;
+                 i++)
+            {
+                PlayerPanelUi panel =
+                    existing[i];
+
+                if (panel == null)
+                    continue;
+
+                int id = ExtractPlayerId(
+                    panel.gameObject.name);
+
+                if (id >= 0)
+                    _playerPanels[id] =
+                        panel;
+            }
+
+            /*
+             * PlayerPanelهای Scene فعلی
+             * PlayerPanelUi ندارند.
+             *
+             * بنابراین آن‌ها را پیدا کرده و
+             * component را runtime اضافه می‌کنیم.
+             */
+            for (int i = 0;
+                 i < _playersContainer.childCount;
+                 i++)
+            {
+                Transform child =
+                    _playersContainer.GetChild(i);
+
+                if (!child.name.StartsWith(
+                        "PlayerPanel_"))
+                {
+                    continue;
+                }
+
+                int id =
+                    ExtractPlayerId(
+                        child.name);
+
+                if (id < 0)
+                    continue;
+
+                PlayerPanelUi panel =
+                    child.GetComponent<
+                        PlayerPanelUi>();
+
+                if (panel == null)
+                {
+                    panel =
+                        child.gameObject.AddComponent<
+                            PlayerPanelUi>();
+                }
+
+                _playerPanels[id] =
+                    panel;
+            }
+        }
+
+        private void ResolveBoardSlots()
+        {
+            Transform board =
+                FindTransform("BoardArea");
+
+            if (board == null)
+                return;
+
+            BoardCardSlotUi[] slots =
+                board.GetComponentsInChildren<
+                    BoardCardSlotUi>(
+                    true);
+
+            if (slots.Length > 0)
+                _boardSlots = slots;
+
+            if (_boardSlots == null)
+                return;
+
+            for (int i = 0;
+                 i < _boardSlots.Length;
+                 i++)
+            {
+                if (_boardSlots[i] != null)
+                    _boardSlots[i].Initialize(i);
+            }
+        }
+
+        private void ResolveBankAnchors()
+        {
+            Transform banks =
+                FindTransform("PlayerBanks");
+
+            if (banks == null)
+                return;
+
+            RectTransform[] children =
+                banks.GetComponentsInChildren<
+                    RectTransform>(
+                    true);
+
+            List<RectTransform> result =
+                new List<RectTransform>();
+
+            for (int i = 0;
+                 i < children.Length;
+                 i++)
+            {
+                if (children[i] == banks)
+                    continue;
+
+                if (children[i].name.StartsWith(
+                        "Bank_"))
+                {
+                    result.Add(children[i]);
+                }
+            }
+
+            result.Sort(
+                (a, b) =>
+                    ExtractPlayerId(
+                        a.name).CompareTo(
+                        ExtractPlayerId(
+                            b.name)));
+
+            _playerBankAnchors =
+                result.ToArray();
+        }
+
+        // ============================================================
+        // LISTENERS
+        // ============================================================
+
         private void RegisterListeners()
         {
-            // IMPORTANT:
-            // NewGamePanel/Start_Button is owned by
-            // DeadManDrawMenuController.
-            //
-            // Do NOT register GameUi.OnStartClicked() here.
+            if (_drawDeckButton != null)
+            {
+                _drawDeckButton.onClick.RemoveListener(
+                    OnDrawDeckClicked);
 
-            if (_endTurnButton != null)
-                _endTurnButton.onClick.AddListener(OnEndTurnClicked);
+                _drawDeckButton.onClick.AddListener(
+                    OnDrawDeckClicked);
+            }
+
+            if (_collectCardsButton != null)
+            {
+                _collectCardsButton.onClick.RemoveListener(
+                    OnCollectCardsClicked);
+
+                _collectCardsButton.onClick.AddListener(
+                    OnCollectCardsClicked);
+            }
 
             if (_buyCoinsButton != null)
-                _buyCoinsButton.onClick.AddListener(OnBuyCoinsClicked);
+            {
+                _buyCoinsButton.onClick.RemoveListener(
+                    OnBuyCoinsClicked);
+
+                _buyCoinsButton.onClick.AddListener(
+                    OnBuyCoinsClicked);
+            }
         }
+
         private void UnregisterListeners()
         {
-            if (_endTurnButton != null)
-                _endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
+            if (_drawDeckButton != null)
+                _drawDeckButton.onClick.RemoveListener(
+                    OnDrawDeckClicked);
+
+            if (_collectCardsButton != null)
+                _collectCardsButton.onClick.RemoveListener(
+                    OnCollectCardsClicked);
 
             if (_buyCoinsButton != null)
-                _buyCoinsButton.onClick.RemoveListener(OnBuyCoinsClicked);
+                _buyCoinsButton.onClick.RemoveListener(
+                    OnBuyCoinsClicked);
         }
+
+        // ============================================================
+        // REFRESH
+        // ============================================================
+
         private void Refresh()
         {
             if (_viewModel == null)
                 return;
 
             RefreshStatus();
-            RefreshActions();
             RefreshEconomy();
             RefreshDeck();
             RefreshPlayers();
-            RefreshHand();
+            RefreshTrait();
             RefreshLog();
+            RefreshActions();
 
-            if (_viewModel.IsGameOver)
-                HideTargetPanel();
+            ShowNotificationIfNeeded(
+                _viewModel.Status);
         }
 
         private void RefreshStatus()
         {
             if (_statusText != null)
-                _statusText.text = _viewModel.Status;
+                _statusText.text =
+                    _viewModel.Status;
 
             if (_turnText != null)
             {
-                _turnText.text = _viewModel.IsGameOver
-                    ? "GAME OVER"
-                    : _viewModel.IsPlayerTurn
-                        ? "YOUR TURN"
-                        : "OPPONENT TURN";
+                _turnText.text =
+                    _viewModel.IsGameOver
+                        ? "GAME OVER"
+                        : _viewModel.IsPlayerTurn
+                            ? "YOUR TURN"
+                            : "OPPONENT TURN";
             }
         }
 
         private void RefreshActions()
         {
-            bool playerTurn = _viewModel.IsPlayerTurn && !_viewModel.IsGameOver;
+            bool playerTurn =
+                _viewModel.IsPlayerTurn &&
+                !_viewModel.IsGameOver;
 
-            if (_endTurnButton != null)
-                _endTurnButton.interactable = playerTurn;
-
-            if (_buyCoinsButton != null)
-                _buyCoinsButton.interactable = playerTurn;
+            if (_drawDeckButton != null)
+            {
+                _drawDeckButton.interactable =
+                    playerTurn;
+            }
 
             if (_collectCardsButton != null)
+            {
                 _collectCardsButton.interactable =
-                    playerTurn && HasBoardCards();
+                    playerTurn;
+            }
         }
+
+        // ============================================================
+        // ECONOMY
+        // ============================================================
 
         private void RefreshEconomy()
         {
             if (_coinsText != null)
-                _coinsText.text = $"COINS  {_viewModel.Coins}";
+            {
+                _coinsText.text =
+                    _viewModel.Coins.ToString();
+            }
 
             if (_scoreText != null)
             {
-                object score = ReadMember(_viewModel, "Score", "PlayerScore");
-                _scoreText.text = score != null ? $"SCORE  {score}" : string.Empty;
+                _scoreText.text =
+                    _viewModel.Score.ToString();
             }
         }
+
+        // ============================================================
+        // DECK
+        // ============================================================
 
         private void RefreshDeck()
         {
             if (_deckText != null)
-                _deckText.text = $"DECK  {_viewModel.DeckCount}";
+            {
+                _deckText.text =
+                    _viewModel.DeckCount.ToString();
+            }
 
             if (_burnText != null)
             {
-                object burnCount = ReadMember(
-                    _viewModel,
-                    "BurnedCount",
-                    "DiscardCount",
-                    "BurnCount");
-
-                _burnText.text = burnCount != null
-                    ? $"BURN  {burnCount}"
-                    : "BURN";
+                _burnText.text =
+                    _viewModel.DiscardCount.ToString();
             }
         }
+
+        // ============================================================
+        // TRAIT
+        // ============================================================
+
+        private void RefreshTrait()
+        {
+            if (_traitImage == null)
+                return;
+
+            /*
+             * تصویر Trait در مرحله انتخاب توسط
+             * DeadManDrawMenuController تنظیم می‌شود.
+             *
+             * اینجا فقط وقتی Trait واقعی داریم
+             * آن را نگه می‌داریم.
+             */
+        }
+
+        public void SetSelectedTraitVisual(
+            Sprite sprite)
+        {
+            if (_traitImage == null)
+                return;
+
+            _traitImage.sprite =
+                sprite;
+
+            _traitImage.enabled =
+                sprite != null;
+        }
+
+        // ============================================================
+        // PLAYERS
+        // ============================================================
 
         private void RefreshPlayers()
         {
-            IReadOnlyList<PlayerViewData> source = _viewModel.Players;
+            IReadOnlyList<PlayerViewData> players =
+                _viewModel.Players;
 
-            if (source == null || source.Count == 0)
+            if (players == null)
                 return;
 
-            List<PlayerViewData> sorted = source
-                .Select((player, index) => new { player, index })
-                .OrderByDescending(x => ToInt(ReadMember(
-                    x.player, "Score", "Points", "Health", "Resource")))
-                .ThenBy(x => x.index)
-                .Select(x => x.player)
-                .ToList();
-
-            // Create missing player panels.
-            for (int i = 0; i < sorted.Count; i++)
+            for (int i = 0;
+                 i < players.Count;
+                 i++)
             {
-                PlayerViewData player = sorted[i];
+                PlayerViewData player =
+                    players[i];
 
-                if (!_playerPanels.TryGetValue(player.PlayerId, out PlayerPanelUi panel))
+                if (!_playerPanels.TryGetValue(
+                        player.PlayerId,
+                        out PlayerPanelUi panel))
                 {
-                    if (_playerPanelPrefab == null || _playersContainer == null)
+                    panel =
+                        FindOrCreatePlayerPanel(
+                            player.PlayerId);
+
+                    if (panel == null)
                         continue;
 
-                    panel = Instantiate(_playerPanelPrefab, _playersContainer);
-                    _playerPanels[player.PlayerId] = panel;
+                    _playerPanels[
+                        player.PlayerId] =
+                        panel;
 
-                    int capturedId = player.PlayerId;
-                    panel.Clicked += () => OnPlayerClicked(capturedId);
+                    int capturedId =
+                        player.PlayerId;
+
+                    panel.Clicked += () =>
+                        OnPlayerClicked(
+                            capturedId);
                 }
+
+                Sprite avatar =
+                    FindAvatarSprite(
+                        player.AvatarIndex);
 
                 panel.Bind(
                     player,
-                    player.PlayerId == _viewModel.CurrentPlayerId);
+                    player.PlayerId ==
+                        _viewModel.CurrentPlayerId,
+                    avatar);
+
+                panel.transform.SetSiblingIndex(i);
             }
 
-            // Remove panels that no longer exist.
-            HashSet<int> aliveIds = new(sorted.Select(p => p.PlayerId));
-            List<int> staleIds = _playerPanels.Keys
-                .Where(id => !aliveIds.Contains(id))
-                .ToList();
+            /*
+             * بازیکن‌هایی که در Match نیستند
+             * پنهان شوند.
+             */
+            HashSet<int> alive =
+                new HashSet<int>(
+                    players.Select(
+                        p => p.PlayerId));
 
-            for (int i = 0; i < staleIds.Count; i++)
+            foreach (KeyValuePair<int,
+                     PlayerPanelUi> pair
+                     in _playerPanels)
             {
-                PlayerPanelUi panel = _playerPanels[staleIds[i]];
-                if (panel != null)
-                    Destroy(panel.gameObject);
+                if (pair.Value == null)
+                    continue;
 
-                _playerPanels.Remove(staleIds[i]);
+                pair.Value.gameObject.SetActive(
+                    alive.Contains(pair.Key));
             }
+        }
 
-            // Score order: highest score first.
-            for (int i = 0; i < sorted.Count; i++)
+        private PlayerPanelUi
+            FindOrCreatePlayerPanel(
+                int playerId)
+        {
+            if (_playersContainer == null)
+                return null;
+
+            string wantedName =
+                "PlayerPanel_" +
+                playerId.ToString("00");
+
+            Transform existing =
+                FindChildRecursive(
+                    _playersContainer,
+                    wantedName);
+
+            if (existing != null)
             {
-                if (_playerPanels.TryGetValue(
-                    sorted[i].PlayerId,
-                    out PlayerPanelUi panel))
+                PlayerPanelUi panel =
+                    existing.GetComponent<
+                        PlayerPanelUi>();
+
+                if (panel == null)
                 {
-                    panel.transform.SetSiblingIndex(i);
+                    panel =
+                        existing.gameObject
+                            .AddComponent<
+                                PlayerPanelUi>();
                 }
-            }
-        }
 
-        private void RefreshHand()
-        {
-            if (_handContainer == null)
-                return;
-
-            ClearContainer(_handContainer);
-
-            IReadOnlyList<CardViewData> hand = _viewModel.Hand;
-            if (hand == null)
-                return;
-
-            for (int i = 0; i < hand.Count; i++)
-                CreateCardWidget(hand[i], _handContainer, OnCardClicked);
-        }
-
-        private void CreateCardWidget(
-            CardViewData card,
-            Transform parent,
-            Action<int> callback)
-        {
-            if (_cardWidgetPrefab == null || parent == null)
-                return;
-
-            CardWidget widget = Instantiate(_cardWidgetPrefab, parent);
-            widget.Bind(card, callback);
-        }
-
-        private void OnCardClicked(int cardId)
-        {
-            if (!_viewModel.IsPlayerTurn || _viewModel.IsGameOver)
-                return;
-
-            CardInteraction interaction =
-                _viewModel.GetCardInteraction(cardId);
-
-            if (interaction == null)
-                return;
-
-            if (interaction.RequiresTarget)
-            {
-                _selectedCardId = cardId;
-                ShowTargetPanel(interaction.Targets);
-                return;
+                return panel;
             }
 
-            _viewModel.PlayCard(cardId);
+            if (_playerPanelPrefab == null)
+                return null;
+
+            return Instantiate(
+                _playerPanelPrefab,
+                _playersContainer);
+        }
+
+        // ============================================================
+        // CARDS
+        // ============================================================
+
+        private void OnDrawDeckClicked()
+        {
+            if (_viewModel == null)
+                return;
+
+            _viewModel.DrawCard();
+        }
+
+        private void OnCollectCardsClicked()
+        {
+            if (_viewModel == null)
+                return;
+
+            _viewModel.StopDrawing();
+        }
+
+        private void OnBuyCoinsClicked()
+        {
+            if (_viewModel != null)
+                _viewModel.BuyCoins();
+        }
+
+        // ============================================================
+        // TARGET
+        // ============================================================
+
+        private void OnPlayerClicked(
+            int playerId)
+        {
+            /*
+             * برای انتخاب Target در نسخه فعلی
+             * از CardInteraction استفاده می‌کنیم.
+             */
         }
 
         private void ShowTargetPanel(
@@ -388,46 +818,66 @@ namespace CardGames.DeadManDraws.Presentation.UI
             if (_targetPanel == null)
                 return;
 
-            ClearContainer(_targetContainer);
-
-            if (targets != null)
+            if (_targetContainer != null)
             {
-                for (int i = 0; i < targets.Count; i++)
-                    CreateTargetButton(targets[i]);
+                for (int i =
+                     _targetContainer.childCount - 1;
+                     i >= 0;
+                     i--)
+                {
+                    Destroy(
+                        _targetContainer
+                            .GetChild(i)
+                            .gameObject);
+                }
+            }
+
+            if (_targetButtonPrefab != null &&
+                _targetContainer != null &&
+                targets != null)
+            {
+                for (int i = 0;
+                     i < targets.Count;
+                     i++)
+                {
+                    TargetViewData target =
+                        targets[i];
+
+                    Button button =
+                        Instantiate(
+                            _targetButtonPrefab,
+                            _targetContainer);
+
+                    TMP_Text text =
+                        button.GetComponentInChildren<
+                            TMP_Text>();
+
+                    if (text != null)
+                        text.text =
+                            target.PlayerName;
+
+                    int targetId =
+                        target.PlayerId;
+
+                    button.onClick.AddListener(
+                        () =>
+                        {
+                            if (!_selectedCardId.HasValue)
+                                return;
+
+                            int cardId =
+                                _selectedCardId.Value;
+
+                            HideTargetPanel();
+
+                            _viewModel.PlayCard(
+                                cardId,
+                                targetId);
+                        });
+                }
             }
 
             _targetPanel.SetActive(true);
-        }
-
-        private void CreateTargetButton(TargetViewData target)
-        {
-            if (_targetButtonPrefab == null ||
-                _targetContainer == null ||
-                target == null)
-                return;
-
-            Button button = Instantiate(
-                _targetButtonPrefab,
-                _targetContainer);
-
-            TMP_Text text =
-                button.GetComponentInChildren<TMP_Text>();
-
-            if (text != null)
-                text.text = target.PlayerName;
-
-            int targetId = target.PlayerId;
-
-            button.onClick.AddListener(() =>
-            {
-                if (!_selectedCardId.HasValue)
-                    return;
-
-                int cardId = _selectedCardId.Value;
-
-                HideTargetPanel();
-                _viewModel.PlayCard(cardId, targetId);
-            });
         }
 
         private void HideTargetPanel()
@@ -438,523 +888,267 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 _targetPanel.SetActive(false);
         }
 
+        // ============================================================
+        // LOG
+        // ============================================================
+
         private void RefreshLog()
         {
             if (_turnLogText == null)
                 return;
 
-            IReadOnlyList<string> log = _viewModel.TurnLog;
+            IReadOnlyList<string> log =
+                _viewModel.TurnLog;
 
-            if (log == null || log.Count == 0)
+            if (log == null ||
+                log.Count == 0)
             {
-                _turnLogText.text = string.Empty;
+                _turnLogText.text =
+                    string.Empty;
+
                 return;
             }
 
-            _turnLogText.text = string.Join("\n", log);
+            _turnLogText.text =
+                string.Join(
+                    "\n",
+                    log);
         }
 
-        // ---------------------------------------------------------------------
-        // PUBLIC ANIMATION HOOKS
-        // Call these from GamePresenter after the corresponding game event.
-        // ---------------------------------------------------------------------
+        // ============================================================
+        // NOTIFICATION
+        // ============================================================
 
-        public void AnimateDraw(
-            CardViewData card,
-            int slotIndex,
-            float duration = -1f)
+        private void ShowNotificationIfNeeded(
+            string message)
         {
-            if (!IsValidSlot(slotIndex) || card == null)
-                return;
-
-            BoardCardSlotUi slot = _boardSlots[slotIndex];
-
-            if (_drawDeckAnchor == null || slot == null)
+            if (string.IsNullOrWhiteSpace(
+                    message))
             {
-                slot?.ShowCard(card, OnBoardCardClicked);
                 return;
             }
 
-            CardWidget widget = CreateFloatingCard(card);
-
-            if (widget == null)
-            {
-                slot.ShowCard(card, OnBoardCardClicked);
+            if (message == _lastNotification)
                 return;
+
+            _lastNotification =
+                message;
+
+            if (_notificationText != null)
+                _notificationText.text =
+                    message;
+
+            if (_notificationGroup == null)
+                return;
+
+            if (_notificationRoutine != null)
+            {
+                StopCoroutine(
+                    _notificationRoutine);
             }
 
-            _animations.Add(StartCoroutine(
-                AnimateCardTo(
-                    widget.gameObject,
-                    _drawDeckAnchor,
-                    slot.CardAnchor,
-                    duration > 0 ? duration : _drawDuration,
-                    false,
-                    () =>
-                    {
-                        slot.ShowCard(card, OnBoardCardClicked);
-                        slot.Attach(widget, card);
-                        _uiAudio?.PlayDraw();
-                    })));
+            _notificationRoutine =
+                StartCoroutine(
+                    NotificationRoutine());
         }
 
-        public void AnimateBurn(
-            int slotIndex,
-            CardViewData card,
-            float duration = -1f)
+        private IEnumerator NotificationRoutine()
         {
-            if (!IsValidSlot(slotIndex))
-                return;
+            _notificationGroup.gameObject
+                .SetActive(true);
 
-            BoardCardSlotUi slot = _boardSlots[slotIndex];
+            _notificationGroup.alpha =
+                1f;
 
-            if (card == null)
-            {
-                slot.Clear();
-                return;
-            }
-
-            CardWidget widget = CreateFloatingCard(card);
-
-            if (widget == null || _burnDeckAnchor == null)
-            {
-                slot.Clear();
-                return;
-            }
-
-            widget.transform.position = slot.CardAnchor.position;
-            slot.Clear();
-
-            _animations.Add(StartCoroutine(
-                AnimateCardTo(
-                    widget.gameObject,
-                    slot.CardAnchor,
-                    _burnDeckAnchor,
-                    duration > 0 ? duration : _burnDuration,
-                    true,
-                    () =>
-                    {
-                        Destroy(widget.gameObject);
-                        _uiAudio?.PlayBurn();
-                    })));
-        }
-
-        public void AnimateCollect(
-            int slotIndex,
-            int playerId,
-            CardViewData card,
-            float duration = -1f)
-        {
-            if (!IsValidSlot(slotIndex) || card == null)
-                return;
-
-            BoardCardSlotUi slot = _boardSlots[slotIndex];
-            RectTransform target = GetBankAnchor(playerId);
-
-            if (target == null)
-            {
-                slot.Clear();
-                return;
-            }
-
-            CardWidget widget = CreateFloatingCard(card);
-
-            if (widget == null)
-            {
-                slot.Clear();
-                return;
-            }
-
-            widget.transform.position = slot.CardAnchor.position;
-            slot.Clear();
-
-            _animations.Add(StartCoroutine(
-                AnimateCardTo(
-                    widget.gameObject,
-                    slot.CardAnchor,
-                    target,
-                    duration > 0 ? duration : _collectDuration,
-                    true,
-                    () =>
-                    {
-                        Destroy(widget.gameObject);
-                        _uiAudio?.PlayCollect();
-                    })));
-        }
-
-        public void AnimateAiCollection(
-            int slotIndex,
-            int playerId,
-            CardViewData card)
-        {
-            // Same visual destination as the player's bank.
-            // The AI decision/timing must remain in the AI/game layer.
-            AnimateCollect(slotIndex, playerId, card);
-        }
-
-        public void OpenPlayerPanel(PlayerViewData player)
-        {
-            if (_playerDetailsPanel == null || player == null)
-                return;
-
-            if (_playerPanelRoot != null)
-                _playerPanelRoot.SetActive(true);
-
-            _playerDetailsPanel.Bind(player);
-        }
-
-        public void OpenCardBankPanel(
-            string title,
-            IReadOnlyList<CardViewData> cards)
-        {
-            if (_cardCollectionPanel == null)
-                return;
-
-            if (_cardsPanelRoot != null)
-                _cardsPanelRoot.SetActive(true);
-
-            _cardCollectionPanel.Bind(title, cards, _cardWidgetPrefab);
-        }
-
-        public void OpenBurnedCardsPanel(
-            IReadOnlyList<CardViewData> cards)
-        {
-            OpenCardBankPanel("BURNED CARDS", cards);
-        }
-
-        public void CloseAllPopups()
-        {
-            if (_playerPanelRoot != null)
-                _playerPanelRoot.SetActive(false);
-
-            if (_cardsPanelRoot != null)
-                _cardsPanelRoot.SetActive(false);
-
-            HideTargetPanel();
-        }
-
-        // ---------------------------------------------------------------------
-        // Button handlers
-        // ---------------------------------------------------------------------
-
-
-        private void OnEndTurnClicked()
-        {
-            if (_viewModel.IsPlayerTurn)
-                _viewModel.EndTurn();
-        }
-
-        private void OnBuyCoinsClicked() =>
-            _viewModel.BuyCoins();
-
-        private void OnDrawDeckClicked()
-        {
-            _uiAudio?.PlayDeckClick();
-
-            // Keeps this UI compatible with the current ViewModel while
-            // allowing the game layer to expose DrawCard()/Draw().
-            InvokeNoArg(
-                _viewModel,
-                "DrawCard",
-                "Draw",
-                "DrawFromDeck");
-        }
-
-        private void OnBurnDeckClicked()
-        {
-            _uiAudio?.PlayDeckClick();
-
-            IReadOnlyList<CardViewData> cards =
-                ReadCardList(
-                    _viewModel,
-                    "BurnedCards",
-                    "DiscardPile",
-                    "DiscardCards");
-
-            if (cards != null)
-                OpenBurnedCardsPanel(cards);
-        }
-
-        private void OnCollectCardsClicked()
-        {
-            _uiAudio?.PlayCollect();
-
-            InvokeNoArg(
-                _viewModel,
-                "CollectCards",
-                "CollectBoardCards",
-                "CollectCardsToBank");
-        }
-
-        private void OnPlayerClicked(int playerId)
-        {
-            IReadOnlyList<PlayerViewData> players = _viewModel.Players;
-            if (players == null)
-                return;
-
-            PlayerViewData player = players
-                .FirstOrDefault(p => p.PlayerId == playerId);
-
-            if (player != null)
-                OpenPlayerPanel(player);
-        }
-
-        private void OnBoardCardClicked(int slotIndex)
-        {
-            // Board cards can be expanded later to support card detail/effect UI.
-            BoardCardSlotUi slot = _boardSlots[slotIndex];
-            slot?.OpenDetail();
-        }
-
-        // ---------------------------------------------------------------------
-        // Helpers
-        // ---------------------------------------------------------------------
-
-        private CardWidget CreateFloatingCard(CardViewData card)
-        {
-            if (_cardWidgetPrefab == null)
-                return null;
-
-            // Put the temporary card under the same canvas as the board.
-            Transform canvasRoot = GetComponentInParent<Canvas>()?.transform;
-            if (canvasRoot == null)
-                canvasRoot = transform;
-
-            CardWidget widget = Instantiate(
-                _cardWidgetPrefab,
-                canvasRoot);
-
-            widget.Bind(card, _ => { });
-            return widget;
-        }
-
-        private IEnumerator AnimateCardTo(
-            GameObject cardObject,
-            RectTransform from,
-            RectTransform to,
-            float duration,
-            bool rotateAndFade,
-            Action completed)
-        {
-            if (cardObject == null || from == null || to == null)
-            {
-                completed?.Invoke();
-                yield break;
-            }
-
-            RectTransform rect = cardObject.transform as RectTransform;
-            if (rect == null)
-            {
-                completed?.Invoke();
-                yield break;
-            }
-
-            rect.position = from.position;
-            rect.localScale = Vector3.one;
-
-            CanvasGroup group = cardObject.GetComponent<CanvasGroup>();
-            if (group == null)
-                group = cardObject.AddComponent<CanvasGroup>();
-
-            group.alpha = 1f;
-
-            Vector3 start = from.position;
-            Vector3 end = to.position;
-            Vector3 arc = Vector3.up * Mathf.Max(40f, Vector3.Distance(start, end) * 0.12f);
+            yield return new WaitForSecondsRealtime(
+                _notificationDuration);
 
             float time = 0f;
 
-            while (time < duration)
+            while (time < 0.2f)
             {
-                time += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(time / duration);
-                float e = _moveCurve.Evaluate(t);
+                time +=
+                    Time.unscaledDeltaTime;
 
-                Vector3 linear = Vector3.LerpUnclamped(start, end, e);
-                float arcAmount = Mathf.Sin(t * Mathf.PI);
-                rect.position = linear + arc * arcAmount;
-
-                if (rotateAndFade)
-                {
-                    rect.localRotation =
-                        Quaternion.Euler(0f, 0f, Mathf.Lerp(0f, 18f, t));
-
-                    group.alpha = Mathf.Lerp(1f, 0.05f, t);
-                    rect.localScale =
-                        Vector3.Lerp(Vector3.one, Vector3.one * 0.72f, t);
-                }
+                _notificationGroup.alpha =
+                    Mathf.Lerp(
+                        1f,
+                        0f,
+                        time / 0.2f);
 
                 yield return null;
             }
 
-            rect.position = end;
-            completed?.Invoke();
+            _notificationGroup.alpha =
+                0f;
+
+            _notificationGroup.gameObject
+                .SetActive(false);
+
+            _notificationRoutine = null;
         }
 
-        private RectTransform GetBankAnchor(int playerId)
+        // ============================================================
+        // BANKS
+        // ============================================================
+
+        private void ClearInitialBanks()
         {
-            IReadOnlyList<PlayerViewData> players = _viewModel.Players;
-            if (players == null || _playerBankAnchors == null)
-                return null;
-
-            List<PlayerViewData> sorted = players
-                .OrderByDescending(p =>
-                    ToInt(ReadMember(
-                        p, "Score", "Points", "Health", "Resource")))
-                .ToList();
-
-            int index = sorted.FindIndex(p => p.PlayerId == playerId);
-
-            if (index < 0 || index >= _playerBankAnchors.Length)
-                return null;
-
-            return _playerBankAnchors[index];
-        }
-
-        private bool HasBoardCards()
-        {
-            for (int i = 0; i < _boardSlots.Length; i++)
-            {
-                if (_boardSlots[i] != null && _boardSlots[i].HasCard)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private bool IsValidSlot(int index) =>
-            _boardSlots != null &&
-            index >= 0 &&
-            index < _boardSlots.Length &&
-            _boardSlots[index] != null;
-
-        private void StopAllAnimations()
-        {
-            for (int i = 0; i < _animations.Count; i++)
-            {
-                if (_animations[i] != null)
-                    StopCoroutine(_animations[i]);
-            }
-
-            _animations.Clear();
-        }
-
-        private static bool InvokeNoArg(
-            object target,
-            params string[] methodNames)
-        {
-            if (target == null)
-                return false;
-
-            Type type = target.GetType();
-
-            foreach (string name in methodNames)
-            {
-                MethodInfo method = type.GetMethod(
-                    name,
-                    BindingFlags.Instance |
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic,
-                    null,
-                    Type.EmptyTypes,
-                    null);
-
-                if (method == null)
-                    continue;
-
-                method.Invoke(target, null);
-                return true;
-            }
-
-            return false;
-        }
-
-        private static IReadOnlyList<CardViewData> ReadCardList(
-            object source,
-            params string[] names)
-        {
-            object value = ReadMember(source, names);
-
-            if (value is IReadOnlyList<CardViewData> readOnly)
-                return readOnly;
-
-            if (value is IEnumerable<CardViewData> enumerable)
-                return enumerable.ToList();
-
-            return null;
-        }
-
-        private static void ClearContainer(Transform container)
-        {
-            if (container == null)
+            if (_playerBankAnchors == null)
                 return;
 
-            for (int i = container.childCount - 1; i >= 0; i--)
-                Destroy(container.GetChild(i).gameObject);
+            for (int i = 0;
+                 i < _playerBankAnchors.Length;
+                 i++)
+            {
+                RectTransform bank =
+                    _playerBankAnchors[i];
+
+                if (bank == null)
+                    continue;
+
+                /*
+                 * فقط Childهای runtime پاک می‌شوند.
+                 * خود Anchor حفظ می‌شود.
+                 */
+                for (int j =
+                     bank.childCount - 1;
+                     j >= 0;
+                     j--)
+                {
+                    Destroy(
+                        bank.GetChild(j)
+                            .gameObject);
+                }
+            }
         }
 
-        private static object ReadMember(object source, params string[] names)
+        // ============================================================
+        // HELPERS
+        // ============================================================
+
+        private Sprite FindAvatarSprite(
+            int avatarIndex)
         {
-            if (source == null || names == null)
+            /*
+             * Avatarهای از قبل موجود در Scene
+             * دست‌نخورده باقی می‌مانند.
+             *
+             * اگر بعداً آرایه Avatar Sprite
+             * اضافه شود می‌توانیم اینجا مستقیماً
+             * آن را وصل کنیم.
+             */
+            return null;
+        }
+
+        private Button FindButton(
+            string rootName)
+        {
+            Transform root =
+                FindTransform(rootName);
+
+            if (root == null)
                 return null;
 
-            Type type = source.GetType();
+            return root.GetComponent<Button>();
+        }
 
-            for (int i = 0; i < names.Length; i++)
+        private TMP_Text FindText(
+            string parentName,
+            string childName)
+        {
+            Transform parent =
+                FindTransform(parentName);
+
+            if (parent == null)
+                return null;
+
+            Transform child =
+                FindChildRecursive(
+                    parent,
+                    childName);
+
+            if (child == null)
+                return null;
+
+            return child.GetComponent<TMP_Text>();
+        }
+
+        private Transform FindTransform(
+            string objectName)
+        {
+            GameObject objectFound =
+                GameObject.Find(objectName);
+
+            return objectFound != null
+                ? objectFound.transform
+                : null;
+        }
+
+        private static Transform
+            FindChildRecursive(
+                Transform parent,
+                string childName)
+        {
+            if (parent == null)
+                return null;
+
+            if (parent.name == childName)
+                return parent;
+
+            for (int i = 0;
+                 i < parent.childCount;
+                 i++)
             {
-                string name = names[i];
+                Transform result =
+                    FindChildRecursive(
+                        parent.GetChild(i),
+                        childName);
 
-                PropertyInfo property = type.GetProperty(
-                    name,
-                    BindingFlags.Instance |
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic);
-
-                if (property != null)
-                    return property.GetValue(source);
-
-                FieldInfo field = type.GetField(
-                    name,
-                    BindingFlags.Instance |
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic);
-
-                if (field != null)
-                    return field.GetValue(source);
+                if (result != null)
+                    return result;
             }
 
             return null;
         }
 
-        private static int ToInt(object value)
+        private static int ExtractPlayerId(
+            string objectName)
         {
-            if (value == null)
-                return 0;
+            if (string.IsNullOrEmpty(
+                    objectName))
+            {
+                return -1;
+            }
 
-            try
-            {
-                return Convert.ToInt32(value);
-            }
-            catch
-            {
-                return 0;
-            }
+            int underscore =
+                objectName.LastIndexOf('_');
+
+            if (underscore < 0)
+                return -1;
+
+            string number =
+                objectName.Substring(
+                    underscore + 1);
+
+            int result;
+
+            return int.TryParse(
+                number,
+                out result)
+                ? result
+                : -1;
         }
 
-        public bool BeginNewMatch(
-    int playerCount,
-    int aiDifficulty)
+        public bool BeginNewMatch(int playerCount, int aiDifficulty)
         {
             if (_viewModel == null)
             {
-                Debug.LogError(
-                    "[GameUi] GameViewModel is NULL.");
-
+                Debug.LogError("[GameUi] GameViewModel is NULL.");
                 return false;
             }
 
-            if (playerCount < 2 ||
-                playerCount > 5)
+            if (playerCount < 1)
             {
                 Debug.LogError(
                     $"[GameUi] Invalid player count: {playerCount}");
@@ -962,51 +1156,24 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 return false;
             }
 
-            if (aiDifficulty < 0 ||
-                aiDifficulty > 2)
+            try
             {
-                Debug.LogError(
-                    $"[GameUi] Invalid AI difficulty: {aiDifficulty}");
+                _viewModel.StartMatch(
+                    playerCount,
+                    aiDifficulty);
 
+                Debug.Log(
+                    $"[GameUi] BeginNewMatch: " +
+                    $"players={playerCount}, " +
+                    $"difficulty={aiDifficulty}");
+
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
                 return false;
             }
-
-            Debug.Log(
-                $"[GameUi] BeginNewMatch: " +
-                $"players={playerCount}, " +
-                $"difficulty={aiDifficulty}");
-            Debug.Log("---- StartMatch 0101");
-            _viewModel.StartMatch(
-                playerCount,
-                aiDifficulty);
-
-            return true;
-        }
-
-        public bool SelectTrait(
-            PlayerTrait trait)
-        {
-            if (_viewModel == null)
-            {
-                Debug.LogError(
-                    "[GameUi] GameViewModel is NULL.");
-
-                return false;
-            }
-
-            return _viewModel.SelectTrait(trait);
-        }
-        public void ContinueAfterTraitSelection()
-        {
-            if (_viewModel == null)
-            {
-                Debug.LogError(
-                    "[GameUi] GameViewModel is NULL.");
-
-                return;
-            }
-
-            _viewModel.ContinueAfterTraitSelection();
         }
     }
 }

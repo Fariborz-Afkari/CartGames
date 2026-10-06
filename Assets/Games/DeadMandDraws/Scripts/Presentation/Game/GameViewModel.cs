@@ -13,14 +13,21 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public GameViewModel()
         {
-            _presenter = new GamePresenter();
+            _presenter =
+                new GamePresenter();
 
-            _presenter.Changed += OnPresenterChanged;
+            _presenter.Changed +=
+                OnPresenterChanged;
         }
 
         public int Coins
         {
             get { return _presenter.Coins; }
+        }
+
+        public int Score
+        {
+            get { return _presenter.Score; }
         }
 
         public bool CanStartMatch
@@ -136,7 +143,6 @@ namespace CardGames.DeadManDraws.Presentation.Game
             int playerCount,
             int aiDifficulty)
         {
-            Debug.Log("---- StartMatch 00");
             _presenter.StartMatch(
                 playerCount,
                 aiDifficulty);
@@ -151,11 +157,6 @@ namespace CardGames.DeadManDraws.Presentation.Game
         {
             return _presenter.SelectTrait(
                 trait);
-        }
-
-        public void ContinueAfterTraitSelection()
-        {
-            _presenter.ContinueAfterTraitSelection();
         }
 
         // ============================================================
@@ -215,10 +216,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         private void OnPresenterChanged()
         {
-            Action handler = Changed;
-
-            if (handler != null)
-                handler();
+            Changed?.Invoke();
         }
     }
 }
