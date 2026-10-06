@@ -25,9 +25,9 @@ namespace CardGames.DeadManDraws.Core.Game
         }
 
         public void StartMatch(
-     int playerCount,
-     int deckCopies = 1,
-     string humanPlayerName = "You")
+    int playerCount,
+    int deckCopies = 1,
+    string humanPlayerName = "You")
         {
             if (playerCount < 1)
                 throw new ArgumentOutOfRangeException(
@@ -39,43 +39,62 @@ namespace CardGames.DeadManDraws.Core.Game
                     nameof(deckCopies),
                     "Deck copies must be at least 1.");
 
-            /*
-             * State.Players از نوع IReadOnlyList است.
-             * بنابراین اینجا نباید Clear() روی آن اجرا شود.
-             *
-             * همچنین این Engine در نسخه فعلی متد BuildDeck ندارد،
-             * پس هیچ BuildDeck() را صدا نمی‌زنیم.
-             */
-
             CreatePlayers(
                 playerCount,
                 humanPlayerName);
 
-            /*
-             * برای تمام بازیکنان دو Trait تصادفی
-             * تولید می‌شود.
-             */
+            // ------------------------------------------------------------
+            // BUILD DECK
+            // ------------------------------------------------------------
+            //
+            // قبلاً Deck ساخته نمی‌شد و به همین دلیل:
+            //
+            // State.Deck.Count == 0
+            //
+            // و DrawCard() همیشه null دریافت می‌کرد.
+            //
+
+            List<Card> deck =
+                PirateCardFactory.CreateDeck(
+                    deckCopies,
+                    out List<Card> initialDiscard);
+
+            State.Deck.Clear();
+
+            State.Deck.AddRange(deck);
+
+            State.Deck.Shuffle(_random);
+
+            // ------------------------------------------------------------
+            // INITIAL DISCARD
+            // ------------------------------------------------------------
+
+            if (initialDiscard != null)
+            {
+                State.AddToDiscard(initialDiscard);
+                State.ShuffleDiscard(_random);
+            }
+
+            // ------------------------------------------------------------
+            // TRAITS
+            // ------------------------------------------------------------
+
             AssignTraitOptions();
 
-            /*
-             * بازیکن انسانی Player 0 است.
-             */
             State.CurrentPlayerId = 0;
 
-            /*
-             * بسیار مهم:
-             * بعد از ساخت بازیکنان باید وارد مرحله
-             * انتخاب Trait شویم.
-             *
-             * SelectTrait() فقط در این Phase اجازه کار دارد.
-             */
-            State.Phase = GamePhase.TraitSelection;
+            State.Phase =
+                GamePhase.TraitSelection;
 
             State.TurnNumber = 0;
             State.IsGameOver = false;
             State.WinnerId = null;
 
             Emit("MatchStarted");
+
+            Emit(
+                "DeckReady:" +
+                State.Deck.Count);
         }
 
         private void CreatePlayers(int count,string humanPlayerName)

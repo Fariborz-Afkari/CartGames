@@ -42,7 +42,8 @@ namespace CardGames.DeadManDraws.Presentation.UI
         [Header("Buttons")]
         [SerializeField] private Button _drawDeckButton;
         [SerializeField] private Button _collectCardsButton;
-        [SerializeField] private Button _buyCoinsButton;
+        [SerializeField]
+        private Button _backButton;
 
         // ============================================================
         // TEXT
@@ -216,7 +217,30 @@ namespace CardGames.DeadManDraws.Presentation.UI
         // ============================================================
         // SCENE REFERENCES
         // ============================================================
+        private TMP_Text FindTextByAnyName(
+    params string[] names)
+        {
+            for (int i = 0;
+                 i < names.Length;
+                 i++)
+            {
+                Transform target =
+                    FindChildRecursive(
+                        transform,
+                        names[i]);
 
+                if (target == null)
+                    continue;
+
+                TMP_Text text =
+                    target.GetComponent<TMP_Text>();
+
+                if (text != null)
+                    return text;
+            }
+
+            return null;
+        }
         private void ResolveSceneReferences()
         {
             if (_statusText == null)
@@ -248,18 +272,11 @@ namespace CardGames.DeadManDraws.Presentation.UI
                         "CollectButton");
             }
 
-            if (_coinsText == null)
-            {
-                _coinsText =
-                    FindText(
-                        "Coins",
-                        "Text");
-            }
-
-            if (_scoreText == null)
-            {
+            if(_scoreText == null)
+{
                 _scoreText =
-                    FindText(
+                    FindTextByAnyName(
+                        "txtScore",
                         "Score",
                         "Text");
             }
@@ -333,6 +350,17 @@ namespace CardGames.DeadManDraws.Presentation.UI
                         target.gameObject;
             }
 
+            if (_backButton == null)
+            {
+                _backButton =
+                    FindButton("BackButton");
+
+                if (_backButton == null)
+                {
+                    _backButton =
+                        FindButton("Back_Button");
+                }
+            }
             ResolveBoardSlots();
 
             ResolveBankAnchors();
@@ -505,13 +533,13 @@ namespace CardGames.DeadManDraws.Presentation.UI
                     OnCollectCardsClicked);
             }
 
-            if (_buyCoinsButton != null)
+            if (_backButton != null)
             {
-                _buyCoinsButton.onClick.RemoveListener(
-                    OnBuyCoinsClicked);
+                _backButton.onClick.RemoveListener(
+                    OnBackButtonClicked);
 
-                _buyCoinsButton.onClick.AddListener(
-                    OnBuyCoinsClicked);
+                _backButton.onClick.AddListener(
+                    OnBackButtonClicked);
             }
         }
 
@@ -525,9 +553,11 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 _collectCardsButton.onClick.RemoveListener(
                     OnCollectCardsClicked);
 
-            if (_buyCoinsButton != null)
-                _buyCoinsButton.onClick.RemoveListener(
-                    OnBuyCoinsClicked);
+            if (_backButton != null)
+            {
+                _backButton.onClick.RemoveListener(
+                    OnBackButtonClicked);
+            }
         }
 
         // ============================================================
@@ -793,10 +823,21 @@ namespace CardGames.DeadManDraws.Presentation.UI
             _viewModel.StopDrawing();
         }
 
-        private void OnBuyCoinsClicked()
+        private void OnBackButtonClicked()
         {
-            if (_viewModel != null)
-                _viewModel.BuyCoins();
+            DeadManDrawMenuController menu =
+                FindFirstObjectByType<
+                    DeadManDrawMenuController>();
+
+            if (menu != null)
+            {
+                //menu.ReturnToMenu();
+                return;
+            }
+
+            Debug.LogWarning(
+                "[GameUi] DeadManDrawMenuController " +
+                "could not be found.");
         }
 
         // ============================================================

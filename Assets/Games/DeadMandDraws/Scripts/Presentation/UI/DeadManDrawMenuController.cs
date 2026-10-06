@@ -788,7 +788,19 @@ namespace CardGames.DeadManDraws.Presentation
             HideAllMenuPanels();
 
             if (_startPanel != null)
+            {
                 _startPanel.SetActive(true);
+            }
+
+            if (_traitHelpPanel != null)
+            {
+                _traitHelpPanel.SetActive(false);
+            }
+
+            if (_selectTraitPanel != null)
+            {
+                _selectTraitPanel.SetActive(false);
+            }
 
             UpdateContinueButton();
 
@@ -1499,6 +1511,34 @@ namespace CardGames.DeadManDraws.Presentation
 
 
             ShowTraitSelection();
+        }
+        public void ReturnToMenu()
+        {
+            if (_gameUi != null)
+            {
+                _gameUi.gameObject.SetActive(true);
+            }
+
+            HideAllMenuPanels();
+
+            if (_startPanel != null)
+            {
+                _startPanel.SetActive(true);
+            }
+
+            if (_traitHelpPanel != null)
+            {
+                _traitHelpPanel.SetActive(false);
+            }
+
+            if (_selectTraitPanel != null)
+            {
+                _selectTraitPanel.SetActive(false);
+            }
+
+            Debug.Log(
+                "[DeadManDrawMenuController] " +
+                "Returned to game menu.");
         }
     }
 }

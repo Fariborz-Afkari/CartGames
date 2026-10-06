@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using CardGames.DeadManDraws.Presentation.Game;
 using TMPro;
 using UnityEngine;
@@ -10,16 +9,26 @@ namespace CardGames.DeadManDraws.Presentation.UI
     public sealed class PlayerPanelUi : MonoBehaviour
     {
         [Header("Content")]
-        [SerializeField] private TMP_Text _nameText;
-        [SerializeField] private TMP_Text _scoreText;
-        [SerializeField] private Image _avatarImage;
+        [SerializeField]
+        private TMP_Text _nameText;
+
+        [SerializeField]
+        private TMP_Text _scoreText;
+
+        [SerializeField]
+        private Image _avatarImage;
 
         [Header("Turn")]
-        [SerializeField] private GameObject _turnGlow;
+        [SerializeField]
+        private GameObject _turnGlow;
 
         private Button _button;
 
         public event Action Clicked;
+
+        // ============================================================
+        // UNITY
+        // ============================================================
 
         private void Awake()
         {
@@ -35,23 +44,41 @@ namespace CardGames.DeadManDraws.Presentation.UI
             }
         }
 
+        // ============================================================
+        // REFERENCES
+        // ============================================================
+
         private void ResolveReferences()
         {
-            TMP_Text[] texts =
-                GetComponentsInChildren<TMP_Text>(
-                    true);
+            // --------------------------------------------------------
+            // NAME
+            // --------------------------------------------------------
 
-            if (_nameText == null &&
-                texts.Length > 0)
+            if (_nameText == null)
             {
-                _nameText = texts[0];
+                _nameText =
+                    FindTextByNames(
+                        "txtName",
+                        "Name",
+                        "PlayerName");
             }
 
-            if (_scoreText == null &&
-                texts.Length > 1)
+            // --------------------------------------------------------
+            // SCORE
+            // --------------------------------------------------------
+
+            if (_scoreText == null)
             {
-                _scoreText = texts[1];
+                _scoreText =
+                    FindTextByNames(
+                        "txtScore",
+                        "Score",
+                        "PlayerScore");
             }
+
+            // --------------------------------------------------------
+            // AVATAR
+            // --------------------------------------------------------
 
             if (_avatarImage == null)
             {
@@ -64,8 +91,19 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 {
                     _avatarImage =
                         avatar.GetComponent<Image>();
+
+                    if (_avatarImage == null)
+                    {
+                        _avatarImage =
+                            avatar.GetComponentInChildren<Image>(
+                                true);
+                    }
                 }
             }
+
+            // --------------------------------------------------------
+            // TURN GLOW
+            // --------------------------------------------------------
 
             if (_turnGlow == null)
             {
@@ -75,12 +113,54 @@ namespace CardGames.DeadManDraws.Presentation.UI
                         "TurnGlow");
 
                 if (glow != null)
-                    _turnGlow = glow.gameObject;
+                    _turnGlow =
+                        glow.gameObject;
             }
+
+            // --------------------------------------------------------
+            // BUTTON
+            // --------------------------------------------------------
 
             _button =
                 GetComponent<Button>();
         }
+
+        private TMP_Text FindTextByNames(
+            params string[] names)
+        {
+            for (int i = 0;
+                 i < names.Length;
+                 i++)
+            {
+                Transform target =
+                    FindChildRecursive(
+                        transform,
+                        names[i]);
+
+                if (target == null)
+                    continue;
+
+                TMP_Text text =
+                    target.GetComponent<TMP_Text>();
+
+                if (text != null)
+                    return text;
+            }
+
+            // Fallback
+            TMP_Text[] texts =
+                GetComponentsInChildren<TMP_Text>(
+                    true);
+
+            if (texts.Length >= 1)
+                return texts[0];
+
+            return null;
+        }
+
+        // ============================================================
+        // BIND
+        // ============================================================
 
         public void Bind(
             PlayerViewData player,
@@ -90,11 +170,19 @@ namespace CardGames.DeadManDraws.Presentation.UI
             if (player == null)
                 return;
 
+            // --------------------------------------------------------
+            // NAME
+            // --------------------------------------------------------
+
             if (_nameText != null)
             {
                 _nameText.text =
                     player.PlayerName;
             }
+
+            // --------------------------------------------------------
+            // SCORE
+            // --------------------------------------------------------
 
             if (_scoreText != null)
             {
@@ -102,30 +190,58 @@ namespace CardGames.DeadManDraws.Presentation.UI
                     player.Score.ToString();
             }
 
-            if (_avatarImage != null &&
-                avatarSprite != null)
-            {
-                _avatarImage.sprite =
-                    avatarSprite;
+            // --------------------------------------------------------
+            // AVATAR
+            // --------------------------------------------------------
 
-                _avatarImage.enabled = true;
+            if (_avatarImage != null)
+            {
+                if (avatarSprite != null)
+                {
+                    _avatarImage.sprite =
+                        avatarSprite;
+                }
+
+                /*
+                 * اگر Avatar از قبل در Scene Sprite داشته باشد،
+                 * حتی وقتی avatarSprite از GameUi نیامده باشد
+                 * نباید Image غیرفعال شود.
+                 */
+
+                _avatarImage.enabled =
+                    _avatarImage.sprite != null;
             }
 
-            SetTurn(isCurrentTurn);
+            // --------------------------------------------------------
+            // TURN
+            // --------------------------------------------------------
+
+            SetTurn(
+                isCurrentTurn);
         }
 
         public void SetTurn(
             bool isCurrentTurn)
         {
             if (_turnGlow != null)
+            {
                 _turnGlow.SetActive(
                     isCurrentTurn);
+            }
         }
+
+        // ============================================================
+        // CLICK
+        // ============================================================
 
         private void OnClicked()
         {
             Clicked?.Invoke();
         }
+
+        // ============================================================
+        // HELPERS
+        // ============================================================
 
         private static Transform FindChildRecursive(
             Transform parent,
@@ -152,6 +268,10 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
             return null;
         }
+
+        // ============================================================
+        // DESTROY
+        // ============================================================
 
         private void OnDestroy()
         {
