@@ -975,7 +975,7 @@ namespace CardGames.DeadManDraws.Presentation.UI
                 $"[GameUi] BeginNewMatch: " +
                 $"players={playerCount}, " +
                 $"difficulty={aiDifficulty}");
-
+            Debug.Log("---- StartMatch 0101");
             _viewModel.StartMatch(
                 playerCount,
                 aiDifficulty);

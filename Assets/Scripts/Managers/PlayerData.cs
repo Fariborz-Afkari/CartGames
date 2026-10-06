@@ -1,6 +1,7 @@
 using UnityEngine;
-
-public static class PlayerData
+namespace CardGames.Managers
+{
+    public static class PlayerData
 {
     private const string PlayerNameKey = "Player_Name";
     private const string AvatarKey = "Player_Avatar";
@@ -133,4 +134,5 @@ public static class PlayerData
 
         return true;
     }
+}
 }

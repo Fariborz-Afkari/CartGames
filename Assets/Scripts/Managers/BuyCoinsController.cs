@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-
+namespace CardGames.Managers { 
 public class BuyCoinsController : MonoBehaviour
 {
     [Header("Buttons")]
@@ -162,4 +162,5 @@ public class BuyCoinsController : MonoBehaviour
 
         SceneManager.LoadScene(mainSceneName);
     }
+}
 }

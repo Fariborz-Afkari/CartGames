@@ -83,6 +83,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
         {
             get
             {
+                Debug.Log("---- Coins = "+ Coins + "  "+ IsMatchRunning);
                 return Coins >= 1 &&
                        !IsMatchRunning;
             }
@@ -159,8 +160,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
             get { return _engine.State.DiscardPile.Count; }
         }
 
-        public IReadOnlyList<PlayerTrait>
-            GetHumanTraitOptions()
+        public IReadOnlyList<PlayerTrait>GetHumanTraitOptions()
         {
             PlayerState player =
                 _engine.State.FindPlayer(
@@ -190,12 +190,14 @@ namespace CardGames.DeadManDraws.Presentation.Game
     int playerCount,
     int aiDifficulty)
         {
+            Debug.Log("---- StartMatch 0");
             if (playerCount < 2 || playerCount > 5)
                 throw new ArgumentOutOfRangeException(
                     nameof(playerCount));
-
+            Debug.Log("---- StartMatch 03");
             if (!CanStartMatch)
             {
+                Debug.Log("---- StartMatch 04");
                 Status = "Cannot start a new match.";
                 NotifyChanged();
                 return;
@@ -205,6 +207,7 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
             if (!Economy.TryStartMatch(out error))
             {
+                Debug.Log("---- StartMatch 05");
                 Status = string.IsNullOrEmpty(error)
                     ? "Cannot start match."
                     : error;
@@ -214,12 +217,12 @@ namespace CardGames.DeadManDraws.Presentation.Game
             }
 
             _turnLog.Clear();
-
+            Debug.Log("---- StartMatch 1");
             _flowController =
                 new GameFlowController(
                     _engine,
                     new BasicAiStrategy(aiDifficulty));
-
+            Debug.Log("---- StartMatch 11");
             _engine.StartMatch(
                 playerCount,
                 1);

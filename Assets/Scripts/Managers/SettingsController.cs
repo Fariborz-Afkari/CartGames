@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
-
-public class SettingsController : MonoBehaviour
+namespace CardGames.Managers
+{
+    public class SettingsController : MonoBehaviour
 {
     // ==========================================
     // Player
@@ -499,4 +500,5 @@ public class SettingsController : MonoBehaviour
             mainSceneName
         );
     }
+}
 }

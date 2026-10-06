@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
-
-public class CartGamesFirstController : MonoBehaviour
+namespace CardGames.Managers
+{
+    public class CartGamesFirstController : MonoBehaviour
 {
     // ==================================================
     // TOP
@@ -619,4 +620,5 @@ public class CartGamesFirstController : MonoBehaviour
 
         return result;
     }
+}
 }

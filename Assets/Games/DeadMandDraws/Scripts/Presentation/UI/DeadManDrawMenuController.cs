@@ -1071,8 +1071,7 @@ namespace CardGames.DeadManDraws.Presentation
         }
 
 
-        private void SelectTrait(
-            PlayerTrait trait)
+        private void SelectTrait(PlayerTrait trait)
         {
             if (trait == PlayerTrait.None)
             {
@@ -1092,9 +1091,6 @@ namespace CardGames.DeadManDraws.Presentation
                 return;
             }
 
-            /*
-             * Trait را به GameEngine می‌فرستیم.
-             */
             bool selected =
                 _gameUi.SelectTrait(trait);
 
@@ -1111,33 +1107,11 @@ namespace CardGames.DeadManDraws.Presentation
                 "[DeadManDrawMenuController] " +
                 $"Trait selected: {trait}");
 
-
-            /*
-             * ابتدا Help را ببند.
-             */
             if (_traitHelpPanel != null)
                 _traitHelpPanel.SetActive(false);
 
-
-            /*
-             * سپس SelectTraitPanel را ببند.
-             */
             if (_selectTraitPanel != null)
                 _selectTraitPanel.SetActive(false);
-
-
-            /*
-             * حالا که بازیکن Trait خودش را انتخاب کرده،
-             * اجازه می‌دهیم GameFlowController ادامه بازی
-             * و Turnهای AI را اجرا کند.
-             */
-            _gameUi.ContinueAfterTraitSelection();
-
-
-            Debug.Log(
-                "[DeadManDrawMenuController] " +
-                "Trait selection completed. " +
-                "Gameplay continued.");
         }
 
         // ============================================================

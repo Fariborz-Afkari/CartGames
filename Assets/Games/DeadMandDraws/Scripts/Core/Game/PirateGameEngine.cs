@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using CardGames.DeadManDraws.Core.Cards;
 using CardGames.DeadManDraws.Core.Players;
-
+using UnityEngine;
 namespace CardGames.DeadManDraws.Core.Game
 {
     public sealed class PirateGameEngine
     {
-        private readonly Random _random;
+        private readonly System.Random _random;
 
         private int _nextPlayerIndex;
 
@@ -18,7 +18,7 @@ namespace CardGames.DeadManDraws.Core.Game
         public PirateGameEngine(string gameId)
         {
             _random =
-                new Random();
+                new System.Random();
 
             State =
                 new GameState(gameId);
@@ -28,6 +28,7 @@ namespace CardGames.DeadManDraws.Core.Game
             int playerCount,
             int deckCopies = 1)
         {
+            Debug.Log("---- StartMatch");
             if (playerCount < 2 ||
                 playerCount > 5)
             {
@@ -68,7 +69,7 @@ namespace CardGames.DeadManDraws.Core.Game
             }
 
             State.Deck.Shuffle(_random);
-
+            Debug.Log("---- AssignTraitOptions -- pre");
             AssignTraitOptions();
 
             State.Phase =
@@ -102,6 +103,7 @@ namespace CardGames.DeadManDraws.Core.Game
 
         private void AssignTraitOptions()
         {
+            Debug.Log("---- AssignTraitOptions");
             PlayerTrait[] traits =
                 GetAllTraits();
 
@@ -127,7 +129,7 @@ namespace CardGames.DeadManDraws.Core.Game
                                 traits.Length)];
                 }
                 while (second == first);
-
+                Debug.Log("---- AssignTraitOptions"+first+second);
                 player.SetTraitOptions(
                     first,
                     second);

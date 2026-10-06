@@ -1,148 +1,150 @@
 using UnityEngine;
-
-public static class GameDataManager
+namespace CardGames.Managers
 {
-    private const string PlayerNameKey = "Player_Name";
-    private const string AvatarKey = "Player_Avatar";
-    private const string CoinsKey = "Player_Coins";
-
-    private const string GamePlayedPrefix = "Game_Played_";
-
-    // --------------------------------------------------
-    // Player Name
-    // --------------------------------------------------
-
-    public static void SetPlayerName(string playerName)
+    public static class GameDataManager
     {
-        if (string.IsNullOrWhiteSpace(playerName))
-            playerName = "Player";
+        private const string PlayerNameKey = "Player_Name";
+        private const string AvatarKey = "Player_Avatar";
+        private const string CoinsKey = "Player_Coins";
 
-        PlayerPrefs.SetString(PlayerNameKey, playerName);
-        PlayerPrefs.Save();
-    }
+        private const string GamePlayedPrefix = "Game_Played_";
 
-    public static string GetPlayerName()
-    {
-        return PlayerPrefs.GetString(PlayerNameKey, "Player");
-    }
+        // --------------------------------------------------
+        // Player Name
+        // --------------------------------------------------
 
+        public static void SetPlayerName(string playerName)
+        {
+            if (string.IsNullOrWhiteSpace(playerName))
+                playerName = "Player";
 
-    // --------------------------------------------------
-    // Avatar
-    // --------------------------------------------------
+            PlayerPrefs.SetString(PlayerNameKey, playerName);
+            PlayerPrefs.Save();
+        }
 
-    public static void SetAvatar(int avatarIndex)
-    {
-        if (avatarIndex < 0)
-            avatarIndex = 0;
-
-        PlayerPrefs.SetInt(AvatarKey, avatarIndex);
-        PlayerPrefs.Save();
-    }
-
-    public static int GetAvatar()
-    {
-        return PlayerPrefs.GetInt(AvatarKey, 0);
-    }
+        public static string GetPlayerName()
+        {
+            return PlayerPrefs.GetString(PlayerNameKey, "Player");
+        }
 
 
-    // --------------------------------------------------
-    // Coins
-    // --------------------------------------------------
+        // --------------------------------------------------
+        // Avatar
+        // --------------------------------------------------
 
-    public static void SetCoins(int amount)
-    {
-        amount = Mathf.Max(0, amount);
+        public static void SetAvatar(int avatarIndex)
+        {
+            if (avatarIndex < 0)
+                avatarIndex = 0;
 
-        PlayerPrefs.SetInt(CoinsKey, amount);
-        PlayerPrefs.Save();
-    }
+            PlayerPrefs.SetInt(AvatarKey, avatarIndex);
+            PlayerPrefs.Save();
+        }
 
-    public static int GetCoins()
-    {
-        return PlayerPrefs.GetInt(CoinsKey, 0);
-    }
-
-    public static void AddCoins(int amount)
-    {
-        if (amount <= 0)
-            return;
-
-        int currentCoins = GetCoins();
-
-        SetCoins(currentCoins + amount);
-    }
-
-    public static bool SpendCoins(int amount)
-    {
-        if (amount < 0)
-            return false;
-
-        int currentCoins = GetCoins();
-
-        if (currentCoins < amount)
-            return false;
-
-        SetCoins(currentCoins - amount);
-
-        return true;
-    }
+        public static int GetAvatar()
+        {
+            return PlayerPrefs.GetInt(AvatarKey, 0);
+        }
 
 
-    // --------------------------------------------------
-    // Games Played
-    // --------------------------------------------------
+        // --------------------------------------------------
+        // Coins
+        // --------------------------------------------------
 
-    public static int GetGamePlayedCount(string gameId)
-    {
-        if (string.IsNullOrEmpty(gameId))
-            return 0;
+        public static void SetCoins(int amount)
+        {
+            amount = Mathf.Max(0, amount);
 
-        return PlayerPrefs.GetInt(
-            GamePlayedPrefix + gameId,
-            0
-        );
-    }
+            PlayerPrefs.SetInt(CoinsKey, amount);
+            PlayerPrefs.Save();
+        }
 
-    public static void SetGamePlayedCount(
-        string gameId,
-        int count
-    )
-    {
-        if (string.IsNullOrEmpty(gameId))
-            return;
+        public static int GetCoins()
+        {
+            return PlayerPrefs.GetInt(CoinsKey, 0);
+        }
 
-        count = Mathf.Max(0, count);
+        public static void AddCoins(int amount)
+        {
+            if (amount <= 0)
+                return;
 
-        PlayerPrefs.SetInt(
-            GamePlayedPrefix + gameId,
-            count
-        );
+            int currentCoins = GetCoins();
 
-        PlayerPrefs.Save();
-    }
+            SetCoins(currentCoins + amount);
+        }
 
-    public static void IncreaseGamePlayedCount(string gameId)
-    {
-        if (string.IsNullOrEmpty(gameId))
-            return;
+        public static bool SpendCoins(int amount)
+        {
+            if (amount < 0)
+                return false;
 
-        int currentCount = GetGamePlayedCount(gameId);
+            int currentCoins = GetCoins();
 
-        SetGamePlayedCount(
-            gameId,
-            currentCount + 1
-        );
-    }
+            if (currentCoins < amount)
+                return false;
+
+            SetCoins(currentCoins - amount);
+
+            return true;
+        }
 
 
-    // --------------------------------------------------
-    // Reset
-    // --------------------------------------------------
+        // --------------------------------------------------
+        // Games Played
+        // --------------------------------------------------
 
-    public static void DeleteAllData()
-    {
-        PlayerPrefs.DeleteAll();
-        PlayerPrefs.Save();
+        public static int GetGamePlayedCount(string gameId)
+        {
+            if (string.IsNullOrEmpty(gameId))
+                return 0;
+
+            return PlayerPrefs.GetInt(
+                GamePlayedPrefix + gameId,
+                0
+            );
+        }
+
+        public static void SetGamePlayedCount(
+            string gameId,
+            int count
+        )
+        {
+            if (string.IsNullOrEmpty(gameId))
+                return;
+
+            count = Mathf.Max(0, count);
+
+            PlayerPrefs.SetInt(
+                GamePlayedPrefix + gameId,
+                count
+            );
+
+            PlayerPrefs.Save();
+        }
+
+        public static void IncreaseGamePlayedCount(string gameId)
+        {
+            if (string.IsNullOrEmpty(gameId))
+                return;
+
+            int currentCount = GetGamePlayedCount(gameId);
+
+            SetGamePlayedCount(
+                gameId,
+                currentCount + 1
+            );
+        }
+
+
+        // --------------------------------------------------
+        // Reset
+        // --------------------------------------------------
+
+        public static void DeleteAllData()
+        {
+            PlayerPrefs.DeleteAll();
+            PlayerPrefs.Save();
+        }
     }
 }

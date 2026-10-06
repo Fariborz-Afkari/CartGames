@@ -13,11 +13,9 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public GameViewModel()
         {
-            _presenter =
-                new GamePresenter();
+            _presenter = new GamePresenter();
 
-            _presenter.Changed +=
-                OnPresenterChanged;
+            _presenter.Changed += OnPresenterChanged;
         }
 
         public int Coins
@@ -85,13 +83,11 @@ namespace CardGames.DeadManDraws.Presentation.Game
             get { return _presenter.HumanTrait; }
         }
 
-        public IReadOnlyList<PlayerTrait>
-            TraitOptions
+        public IReadOnlyList<PlayerTrait> TraitOptions
         {
             get
             {
-                return _presenter
-                    .GetHumanTraitOptions();
+                return _presenter.GetHumanTraitOptions();
             }
         }
 
@@ -99,38 +95,31 @@ namespace CardGames.DeadManDraws.Presentation.Game
         {
             get
             {
-                return _presenter
-                    .GetPlayerHand();
+                return _presenter.GetPlayerHand();
             }
         }
 
-        public IReadOnlyList<CardViewData>
-            PlayArea
+        public IReadOnlyList<CardViewData> PlayArea
         {
             get
             {
-                return _presenter
-                    .GetPlayerPlayArea();
+                return _presenter.GetPlayerPlayArea();
             }
         }
 
-        public IReadOnlyList<CardViewData>
-            Bank
+        public IReadOnlyList<CardViewData> Bank
         {
             get
             {
-                return _presenter
-                    .GetPlayerBank();
+                return _presenter.GetPlayerBank();
             }
         }
 
-        public IReadOnlyList<PlayerViewData>
-            Players
+        public IReadOnlyList<PlayerViewData> Players
         {
             get
             {
-                return _presenter
-                    .GetPlayers();
+                return _presenter.GetPlayers();
             }
         }
 
@@ -139,10 +128,23 @@ namespace CardGames.DeadManDraws.Presentation.Game
             get { return _presenter.TurnLog; }
         }
 
-        //public void StartMatch()
-        //{
-        //    _presenter.StartMatch();
-        //}
+        // ============================================================
+        // MATCH
+        // ============================================================
+
+        public void StartMatch(
+            int playerCount,
+            int aiDifficulty)
+        {
+            Debug.Log("---- StartMatch 00");
+            _presenter.StartMatch(
+                playerCount,
+                aiDifficulty);
+        }
+
+        // ============================================================
+        // TRAIT
+        // ============================================================
 
         public bool SelectTrait(
             PlayerTrait trait)
@@ -150,6 +152,15 @@ namespace CardGames.DeadManDraws.Presentation.Game
             return _presenter.SelectTrait(
                 trait);
         }
+
+        public void ContinueAfterTraitSelection()
+        {
+            _presenter.ContinueAfterTraitSelection();
+        }
+
+        // ============================================================
+        // GAME ACTIONS
+        // ============================================================
 
         public bool DrawCard()
         {
@@ -180,12 +191,16 @@ namespace CardGames.DeadManDraws.Presentation.Game
             _presenter.BuyCoins();
         }
 
-        public CardInteraction
-            GetCardInteraction(int cardId)
+        public CardInteraction GetCardInteraction(
+            int cardId)
         {
-            return _presenter
-                .GetCardInteraction(cardId);
+            return _presenter.GetCardInteraction(
+                cardId);
         }
+
+        // ============================================================
+        // DISPOSE
+        // ============================================================
 
         public void Dispose()
         {
@@ -200,23 +215,10 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         private void OnPresenterChanged()
         {
-            Changed?.Invoke();
-        }
-        public void StartMatch(int playerCount, int aiDifficulty)
-        {
-            _presenter.StartMatch(playerCount, aiDifficulty);
-        }
-        public void ContinueAfterTraitSelection()
-        {
-            if (_presenter == null)
-            {
-                Debug.LogError(
-                    "[GameViewModel] Presenter is NULL.");
+            Action handler = Changed;
 
-                return;
-            }
-
-            _presenter.ContinueAfterTraitSelection();
+            if (handler != null)
+                handler();
         }
     }
 }

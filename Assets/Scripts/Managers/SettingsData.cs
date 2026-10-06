@@ -1,6 +1,7 @@
 using UnityEngine;
-
-public static class SettingsData
+namespace CardGames.Managers
+{
+    public static class SettingsData
 {
     private const string PlayerNameKey = "Settings_PlayerName";
     private const string AvatarKey = "Settings_Avatar";
@@ -118,4 +119,5 @@ public static class SettingsData
         SetMusic(music);
         SetFX(fx);
     }
+}
 }
