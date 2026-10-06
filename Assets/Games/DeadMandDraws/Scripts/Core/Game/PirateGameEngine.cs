@@ -25,9 +25,9 @@ namespace CardGames.DeadManDraws.Core.Game
         }
 
         public void StartMatch(
-    int playerCount,
-    int deckCopies = 1,
-    string humanPlayerName = "You")
+     int playerCount,
+     int deckCopies = 1,
+     string humanPlayerName = "You")
         {
             if (playerCount < 1)
                 throw new ArgumentOutOfRangeException(
@@ -39,19 +39,41 @@ namespace CardGames.DeadManDraws.Core.Game
                     nameof(deckCopies),
                     "Deck copies must be at least 1.");
 
-            // توجه:
-            // State.Players از نوع IReadOnlyList است و Clear ندارد.
-            // بنابراین اینجا نباید State.Players.Clear() صدا زده شود.
+            /*
+             * State.Players از نوع IReadOnlyList است.
+             * بنابراین اینجا نباید Clear() روی آن اجرا شود.
+             *
+             * همچنین این Engine در نسخه فعلی متد BuildDeck ندارد،
+             * پس هیچ BuildDeck() را صدا نمی‌زنیم.
+             */
 
             CreatePlayers(
                 playerCount,
                 humanPlayerName);
 
-            //BuildDeck(deckCopies);
-
+            /*
+             * برای تمام بازیکنان دو Trait تصادفی
+             * تولید می‌شود.
+             */
             AssignTraitOptions();
 
+            /*
+             * بازیکن انسانی Player 0 است.
+             */
             State.CurrentPlayerId = 0;
+
+            /*
+             * بسیار مهم:
+             * بعد از ساخت بازیکنان باید وارد مرحله
+             * انتخاب Trait شویم.
+             *
+             * SelectTrait() فقط در این Phase اجازه کار دارد.
+             */
+            State.Phase = GamePhase.TraitSelection;
+
+            State.TurnNumber = 0;
+            State.IsGameOver = false;
+            State.WinnerId = null;
 
             Emit("MatchStarted");
         }

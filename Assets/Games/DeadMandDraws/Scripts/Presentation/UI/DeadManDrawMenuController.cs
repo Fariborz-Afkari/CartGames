@@ -851,14 +851,9 @@ namespace CardGames.DeadManDraws.Presentation
 
         private void StartNewGame()
         {
-
-
-
-
             Debug.Log(
                 "[DeadManDrawMenuController] " +
                 "StartNewGame() CLICKED.");
-
 
             if (_gameUi == null)
             {
@@ -869,7 +864,6 @@ namespace CardGames.DeadManDraws.Presentation
                 return;
             }
 
-
             int playerCount =
                 _playerNumSlider != null
                     ? Mathf.Clamp(
@@ -879,7 +873,6 @@ namespace CardGames.DeadManDraws.Presentation
                         MaxPlayers)
                     : 2;
 
-
             int difficulty =
                 _hardnessSlider != null
                     ? Mathf.Clamp(
@@ -888,7 +881,6 @@ namespace CardGames.DeadManDraws.Presentation
                         MinDifficulty,
                         MaxDifficulty)
                     : 0;
-
 
             bool started =
                 _gameUi.BeginNewMatch(
@@ -912,33 +904,6 @@ namespace CardGames.DeadManDraws.Presentation
             SaveGameSetup(
                 playerCount,
                 difficulty);
-
-            ShowTraitSelection();
-            if (!started)
-            {
-                Debug.LogError(
-                    "[DeadManDrawMenuController] " +
-                    "GameUi.BeginNewMatch() returned FALSE.");
-
-                return;
-            }
-
-
-            SaveGameSetup(
-                playerCount,
-                difficulty);
-
-
-            /*
-             * مهم:
-             *
-             * خود GameEngine در زمان StartMatch
-             * دو Trait متفاوت را به صورت تصادفی
-             * برای بازیکن تولید کرده است.
-             *
-             * بنابراین اینجا Trait تولید نمی‌کنیم.
-             * فقط همان دو گزینه را از GameUi می‌گیریم.
-             */
 
             ShowTraitSelection();
         }
