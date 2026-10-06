@@ -43,27 +43,33 @@ namespace CardGames.DeadManDraws.Core.Game
                 playerCount,
                 humanPlayerName);
 
-            // ------------------------------------------------------------
+            /// ------------------------------------------------------------
             // BUILD DECK
             // ------------------------------------------------------------
-            //
-            // قبلاً Deck ساخته نمی‌شد و به همین دلیل:
-            //
-            // State.Deck.Count == 0
-            //
-            // و DrawCard() همیشه null دریافت می‌کرد.
-            //
 
             List<Card> deck =
                 PirateCardFactory.CreateDeck(
                     deckCopies,
                     out List<Card> initialDiscard);
 
+            Debug.Log(
+                $"[DeckDebug] Factory created: " +
+                $"deck={deck.Count}, " +
+                $"initialDiscard={(initialDiscard != null ? initialDiscard.Count : -1)}");
+
             State.Deck.Clear();
 
             State.Deck.AddRange(deck);
 
+            Debug.Log(
+                $"[DeckDebug] State.Deck after AddRange: " +
+                $"count={State.Deck.Count}");
+
             State.Deck.Shuffle(_random);
+
+            Debug.Log(
+                $"[DeckDebug] State.Deck after Shuffle: " +
+                $"count={State.Deck.Count}");
 
             // ------------------------------------------------------------
             // INITIAL DISCARD
@@ -72,7 +78,21 @@ namespace CardGames.DeadManDraws.Core.Game
             if (initialDiscard != null)
             {
                 State.AddToDiscard(initialDiscard);
+
+                Debug.Log(
+                    $"[DeckDebug] Discard after AddToDiscard: " +
+                    $"count={State.DiscardPile.Count}");
+
                 State.ShuffleDiscard(_random);
+
+                Debug.Log(
+                    $"[DeckDebug] Discard after Shuffle: " +
+                    $"count={State.DiscardPile.Count}");
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[DeckDebug] initialDiscard is NULL!");
             }
 
             // ------------------------------------------------------------
@@ -85,6 +105,13 @@ namespace CardGames.DeadManDraws.Core.Game
 
             State.Phase =
                 GamePhase.TraitSelection;
+
+            Debug.Log(
+    $"[DeckDebug] MATCH READY | " +
+    $"Deck={State.Deck.Count} | " +
+    $"Discard={State.DiscardPile.Count} | " +
+    $"Phase={State.Phase} | " +
+    $"CurrentPlayer={State.CurrentPlayerId}");
 
             State.TurnNumber = 0;
             State.IsGameOver = false;
@@ -319,17 +346,33 @@ namespace CardGames.DeadManDraws.Core.Game
         }
 
         private bool DrawCard(
-            PlayerState player)
+    PlayerState player)
         {
+            Debug.Log(
+                $"[DrawDebug] Engine.DrawCard START | " +
+                $"Player={player.Id} | " +
+                $"Phase={State.Phase} | " +
+                $"CurrentPlayer={State.CurrentPlayerId} | " +
+                $"Deck={State.Deck.Count}");
+
             if (State.Phase !=
                 GamePhase.Turn)
             {
+                Debug.LogWarning(
+                    $"[DrawDebug] Draw rejected: wrong phase | " +
+                    $"Phase={State.Phase}");
+
                 return false;
             }
 
             if (State.CurrentPlayerId !=
                 player.Id)
             {
+                Debug.LogWarning(
+                    $"[DrawDebug] Draw rejected: wrong player | " +
+                    $"Current={State.CurrentPlayerId} | " +
+                    $"Requested={player.Id}");
+
                 return false;
             }
 
@@ -337,6 +380,11 @@ namespace CardGames.DeadManDraws.Core.Game
                     State,
                     player))
             {
+                Debug.LogWarning(
+                    $"[DrawDebug] Draw rejected by GameRules | " +
+                    $"Player={player.Id} | " +
+                    $"Deck={State.Deck.Count}");
+
                 return false;
             }
 
@@ -344,15 +392,23 @@ namespace CardGames.DeadManDraws.Core.Game
                 State.Deck.Draw();
 
             if (card == null)
+            {
+                Debug.LogError(
+                    "[DrawDebug] State.Deck.Draw() returned NULL!");
+
                 return false;
+            }
+
+            Debug.Log(
+                $"[DrawDebug] CARD DRAWN | " +
+                $"InstanceId={card.InstanceId} | " +
+                $"Type={card.Type} | " +
+                $"Value={card.Value} | " +
+                $"DeckRemaining={State.Deck.Count}");
 
             player.HasDrawnAtLeastOne =
                 true;
 
-            /*
-             * کارت ابتدا رو می‌شود و وارد
-             * Play Area می‌شود.
-             */
             player.PlayArea.Add(card);
 
             Emit(
@@ -360,6 +416,8 @@ namespace CardGames.DeadManDraws.Core.Game
                 player.Id +
                 ":" +
                 card.InstanceId);
+
+            // ادامه کد فعلی DrawCard از اینجا بدون تغییر
 
             /*
              * قانون جدید:

@@ -165,7 +165,19 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public bool DrawCard()
         {
-            return _presenter.DrawCard();
+            Debug.Log(
+                $"[DrawDebug] GameViewModel.DrawCard() | " +
+                $"Deck={DeckCount} | " +
+                $"IsPlayerTurn={IsPlayerTurn}");
+
+            bool result =
+                _presenter.DrawCard();
+
+            Debug.Log(
+                $"[DrawDebug] GameViewModel.DrawCard() result={result} | " +
+                $"DeckAfter={DeckCount}");
+
+            return result;
         }
 
         public bool StopDrawing()

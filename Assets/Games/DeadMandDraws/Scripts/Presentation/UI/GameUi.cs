@@ -522,6 +522,14 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
                 _drawDeckButton.onClick.AddListener(
                     OnDrawDeckClicked);
+
+                Debug.Log(
+                    "[DrawDebug] DrawDeck button listener registered.");
+            }
+            else
+            {
+                Debug.LogError(
+                    "[DrawDebug] DrawDeck button is NULL!");
             }
 
             if (_collectCardsButton != null)
@@ -642,16 +650,34 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
         private void RefreshDeck()
         {
+            if (_viewModel == null)
+                return;
+
+            Debug.Log(
+                $"[DeckDebug] RefreshDeck | " +
+                $"ViewModel.DeckCount={_viewModel.DeckCount} | " +
+                $"ViewModel.DiscardCount={_viewModel.DiscardCount}");
+
             if (_deckText != null)
             {
                 _deckText.text =
                     _viewModel.DeckCount.ToString();
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[DeckDebug] _deckText is NULL!");
             }
 
             if (_burnText != null)
             {
                 _burnText.text =
                     _viewModel.DiscardCount.ToString();
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[DeckDebug] _burnText is NULL!");
             }
         }
 
@@ -809,10 +835,29 @@ namespace CardGames.DeadManDraws.Presentation.UI
 
         private void OnDrawDeckClicked()
         {
-            if (_viewModel == null)
-                return;
+            Debug.Log(
+                "[DrawDebug] DrawDeck CLICKED");
 
-            _viewModel.DrawCard();
+            if (_viewModel == null)
+            {
+                Debug.LogError(
+                    "[DrawDebug] _viewModel is NULL!");
+
+                return;
+            }
+
+            Debug.Log(
+                $"[DrawDebug] Before DrawCard | " +
+                $"Deck={_viewModel.DeckCount} | " +
+                $"PlayerTurn={_viewModel.IsPlayerTurn} | " +
+                $"GameOver={_viewModel.IsGameOver}");
+
+            bool result =
+                _viewModel.DrawCard();
+
+            Debug.Log(
+                $"[DrawDebug] ViewModel.DrawCard result={result} | " +
+                $"DeckAfter={_viewModel.DeckCount}");
         }
 
         private void OnCollectCardsClicked()

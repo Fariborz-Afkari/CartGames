@@ -527,8 +527,22 @@ namespace CardGames.DeadManDraws.Presentation.Game
 
         public bool DrawCard()
         {
+            Debug.Log(
+                $"[DrawDebug] GamePresenter.DrawCard() START | " +
+                $"Phase={_engine.State.Phase} | " +
+                $"CurrentPlayer={_engine.State.CurrentPlayerId} | " +
+                $"HumanPlayer={HumanPlayerId} | " +
+                $"Deck={_engine.State.Deck.Count}");
+
             if (!IsPlayerTurn)
             {
+                Debug.LogWarning(
+                    $"[DrawDebug] Draw rejected: " +
+                    $"IsPlayerTurn=false | " +
+                    $"Phase={_engine.State.Phase} | " +
+                    $"CurrentPlayer={_engine.State.CurrentPlayerId} | " +
+                    $"HumanPlayer={HumanPlayerId}");
+
                 Status =
                     "It is not your turn.";
 
@@ -537,10 +551,18 @@ namespace CardGames.DeadManDraws.Presentation.Game
                 return false;
             }
 
+            Debug.Log(
+                "[DrawDebug] Presenter submitting GameAction.DrawCard");
+
             bool result =
                 _engine.SubmitAction(
                     GameAction.DrawCard(
                         HumanPlayerId));
+
+            Debug.Log(
+                $"[DrawDebug] Engine.SubmitAction(DrawCard) " +
+                $"returned={result} | " +
+                $"DeckAfter={_engine.State.Deck.Count}");
 
             Status =
                 result
