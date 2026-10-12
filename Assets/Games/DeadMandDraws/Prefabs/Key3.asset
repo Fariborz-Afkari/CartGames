@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84285e2df0223c43a34010dabba60ce, type: 3}
+  m_Name: Key3
+  m_EditorClassIdentifier: Assembly-CSharp::DeadManDraws.CardDefinition
+  CardId: 26
+  Image: {fileID: 1694913177206695654, guid: 1c22b78628f1a514fbd4de8ef4ccdd2d, type: 3}
+  CardType: 4
+  Value: 3
+  Description: "\u0628\u0627 \u0635\u0646\u062F\u0648\u0642\u0686\u0647 \u06A9\u0627\u0631 \u0645\u06CC\u200C\u06A9\u0646\u062F"
+  Name: "\u06A9\u0644\u06CC\u062F"

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acaa8311e590a614ea64106f85f8e028, type: 3}
+  m_Name: Navigator
+  m_EditorClassIdentifier: Assembly-CSharp::DeadManDraws.TraitDefinition
+  TraitId: 11
+  Image: {fileID: 3185692019250140041, guid: 49658cfba31d3a544ad96578e0ea8282, type: 3}
+  TraitType: 7
+  Description: "\u0647\u0631\u06AF\u0627\u0647 \u06A9\u0627\u0631\u062A \xAB\u0646\u0642\u0634\u0647\xBB(Map) \u06A9\u0634\u06CC\u062F\u0647 \u0634\u0648\u062F\u060C \u0628\u0647 \u062C\u0627\u06CC \u0645\u0634\u0627\u0647\u062F\u0647 \u0633\u0647 \u06A9\u0627\u0631\u062A \u0633\u0648\u062E\u062A\u0647 \u0648 \u0627\u0646\u062A\u062E\u0627\u0628 \u06CC\u06A9\u06CC \u060C\u0645\u06CC\u200C\u062A\u0648\u0627\u0646\u06CC\u062F \u06A9\u0644 \u06A9\u0627\u0631\u062A \u0647\u0627\u06CC \u062F\u06A9 \u0633\u0648\u062E\u062A\u0647  (BurnDeck)\u0631\u0627 \u0628\u0628\u06CC\u0646\u06CC\u062F \u0648 \u0647\u0631 \u06A9\u0627\u0631\u062A\u06CC \u0631\u0627 \u062E\u0648\u0627\u0633\u062A\u06CC\u062F \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0631\u062F\u0647 \u0648 \u0628\u0647 \u0645\u0646\u0637\u0642\u0647 \u0628\u0627\u0632\u06CC (BoardPanel) \u0627\u0636\u0627\u0641\u0647 \u06A9\u0646\u06CC\u062F."
+  Name: "\u0645\u0633\u06CC\u0631\u06CC\u0627\u0628"

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acaa8311e590a614ea64106f85f8e028, type: 3}
+  m_Name: Casanova
+  m_EditorClassIdentifier: Assembly-CSharp::DeadManDraws.TraitDefinition
+  TraitId: 3
+  Image: {fileID: -459506505070459426, guid: 7524d22ef9e48bf4eab79074bbcb52bc, type: 3}
+  TraitType: 2
+  Description: "\u0648\u0642\u062A\u06CC \u06CC\u06A9 \u067E\u0631\u06CC \u062F\u0631\u06CC\u0627\u06CC\u06CC \u0645\u06CC\u200C\u06A9\u0634\u06CC\u062F\u060C \u0628\u0644\u0627\u0641\u0627\u0635\u0644\u0647 \u0622\u0646 \u0631\u0627 \u0628\u0647 \u0628\u0627\u0646\u06A9 \u0627\u0636\u0627\u0641\u0647 \u062E\u0648\u0627\u0647\u06CC\u062F \u06A9\u0631\u062F."
+  Name: "\u06A9\u0627\u0632\u0627\u0646\u0648\u0648\u0627"

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84285e2df0223c43a34010dabba60ce, type: 3}
+  m_Name: Anchor6
+  m_EditorClassIdentifier: Assembly-CSharp::DeadManDraws.CardDefinition
+  CardId: 5
+  Image: {fileID: -3459125898133439573, guid: 9c6bb11431dfe664f91f332ba16d1b8b, type: 3}
+  CardType: 0
+  Value: 6
+  Description: "\u062D\u062A\u06CC \u0627\u06AF\u0631 \u0628\u0633\u0648\u0632\u06CC\u062F\u060C \u0647\u0631 \u06A9\u0627\u0631\u062A\u06CC \u0631\u0627 \u06A9\u0647 \u0642\u0628\u0644 \u0627\u0632 \u06A9\u0634\u06CC\u062F\u0646 \u0644\u0646\u06AF\u0631 \u06A9\u0634\u06CC\u062F\u0647\u200C\u0627\u06CC\u062F\u060C \u0646\u06AF\u0647 \u0645\u06CC\u200C\u062F\u0627\u0631\u06CC\u062F"
+  Name: "\u0644\u0646\u06AF\u0631"

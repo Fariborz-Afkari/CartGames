@@ -1,0 +1,11 @@
+# Architecture mapping
+- GameUIController: builds and coordinates runtime Canvas panels; maps to StartPanel/NewGamePanel/SelectTraitPanel/HelpPanel/DeadManDrawScene.
+- GameEngine: creates DrawDeck/BurnDeck, applies turn rules, bust, collect, and final score.
+- GameFlowController: connects human input to engine and runs AI turns.
+- GameState: active board, decks, protection flags, status message.
+- CardDefinition / TraitDefinition: ScriptableObject definitions with required documented fields.
+- PlayerDefinition / PlayerData / GameData: documented identity, trait, bank and game state.
+- CardWidget / TraitWidget: card and trait UI binders.
+- AiPlayer: difficulty-based draw/collect decision.
+- UiAudio / UiAnimation: optional click sound and pulse animation.
+- CardType / TraitType: enum values.
