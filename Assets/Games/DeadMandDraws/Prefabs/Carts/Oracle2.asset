@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84285e2df0223c43a34010dabba60ce, type: 3}
+  m_Name: Oracle2
+  m_EditorClassIdentifier: Assembly-CSharp::DeadManDraws.CardDefinition
+  CardId: 49
+  Image: {fileID: -7940466284653893424, guid: 2315b2e34c512634c9bf90d1ea5541aa, type: 3}
+  CardType: 8
+  Value: 2
+  Description: "\u0645\u06CC \u062A\u0648\u0627\u0646\u06CC\u062F \u06A9\u0627\u0631\u062A \u0628\u0639\u062F\u06CC \u062F\u06A9 \u0631\u0627 \u0645\u0634\u0627\u0647\u062F\u0647 \u06A9\u0646\u06CC\u062F \u0648 \u0628\u0639\u062F \u062A\u0635\u0645\u06CC\u0645 \u0628\u0647 \u0627\u062F\u0627\u0645\u0647 \u06CC\u0627 \u0627\u062A\u0645\u0627\u0645 \u0646\u0648\u0628\u062A \u062E\u0648\u062F \u06A9\u0646\u06CC\u062F"
+  Name: "\u067E\u06CC\u0634\u06AF\u0648"

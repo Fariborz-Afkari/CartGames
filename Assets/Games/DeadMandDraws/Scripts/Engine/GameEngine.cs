@@ -169,53 +169,122 @@ namespace DeadManDraws
             foreach (var c in board) if (c.CardType == t) n++;
             return n > 1;
         }
-
         void HandleBust(PlayerData p, CardDefinition causing, PlayResult result)
         {
             result.Busted = true;
             Notify($"{p.PlayerName} سوخت!");
 
-            bool anchorProtect = false;
-            foreach (var c in p.Board) if (c.CardType == CardType.Anchor) { anchorProtect = true; break; }
+            // پیدا کردن جای لنگر
+            int anchorIdx = -1;
+            for (int i = 0; i < p.Board.Count; i++)
+                if (p.Board[i].CardType == CardType.Anchor) { anchorIdx = i; break; }
 
-            if (anchorProtect || p.Trait == TraitType.SafeHarbor)
+            bool safeHarbor = p.Trait == TraitType.SafeHarbor;
+
+            // اگه لنگر نیست → همه کارت‌ها می‌سوزن (یا به Davy Jones می‌رن)
+            if (anchorIdx < 0)
             {
-                // keep everything from anchor onwards, bank the rest
-                var keep = new List<CardDefinition>();
-                bool hitAnchor = false;
-                foreach (var c in p.Board)
-                {
-                    if (c.CardType == CardType.Anchor) hitAnchor = true;
-                    if (hitAnchor) keep.Add(c);
-                    else p.Bank.Add(c);
-                }
-                foreach (var c in keep) p.Bank.Add(c);
+                HandleNormalBust(p);
+                return;
+            }
+
+            int lastIdx = p.Board.Count - 1;
+            int lastSafe;
+
+            if (safeHarbor)
+                lastSafe = Mathf.Min(lastIdx - 1, anchorIdx + 2);   // لنگر + 2 کارت بعدش امن
+            else
+                lastSafe = anchorIdx - 1;                          // فقط کارت‌های قبل از لنگر امن
+
+            // کارت‌های امن → بانک (به جز کارت باعث سوختن)
+            for (int i = 0; i <= lastSafe; i++)
+            {
+                var c = p.Board[i];
+                if (c == causing) continue;
+                p.Bank.Add(c);
+            }
+
+            // کارت‌های ناامن + کارت باعث سوختن → دک سوخته
+            for (int i = lastSafe + 1; i <= lastIdx; i++)
+                Data.BurnDeck.Add(p.Board[i]);
+
+            // اطمینان: کارت باعث سوختن همیشه می‌سوزه
+            int causingIdx = p.Board.IndexOf(causing);
+            if (causingIdx >= 0 && causingIdx <= lastSafe)
+                Data.BurnDeck.Add(causing);
+
+            p.Board.Clear();
+            Notify("لنگر: فقط کارت‌های قبل از لنگر نجات یافتند.");
+            RaiseChanged();
+        }
+
+        void HandleNormalBust(PlayerData p)
+        {
+            // Davy Jones Locker: کارت‌ها به بانک صاحب این trait می‌رن
+            PlayerData davy = null;
+            foreach (var other in Data.Players)
+                if (other.Trait == TraitType.DavyJonesLocker && other.PlayerId == p.DavyJonesOwnerId)
+                { davy = other; break; }
+
+            if (davy != null)
+            {
+                foreach (var c in p.Board) davy.Bank.Add(c);
                 p.Board.Clear();
-                Notify("لنگر/لنگرگاه امن کارت‌های قبل را نجات داد.");
+                Notify($"صندوقچه دیوی جونز: کارت‌ها به بانک {davy.PlayerName} رفت.");
             }
             else
             {
-                // Davy Jones Locker: owner of this player gets the board
-                PlayerData davy = null;
-                foreach (var other in Data.Players)
-                    if (other.Trait == TraitType.DavyJonesLocker && other.PlayerId == p.DavyJonesOwnerId)
-                    { davy = other; break; }
-
-                if (davy != null)
-                {
-                    foreach (var c in p.Board) davy.Bank.Add(c);
-                    p.Board.Clear();
-                    Notify($"صندوقچه دیوی جونز: کارت‌ها به بانک {davy.PlayerName} رفت.");
-                }
-                else
-                {
-                    foreach (var c in p.Board) Data.BurnDeck.Add(c);
-                    p.Board.Clear();
-                }
+                foreach (var c in p.Board) Data.BurnDeck.Add(c);
+                p.Board.Clear();
             }
-
             RaiseChanged();
         }
+        //void HandleBust(PlayerData p, CardDefinition causing, PlayResult result)
+        //{
+        //    result.Busted = true;
+        //    Notify($"{p.PlayerName} سوخت!");
+
+        //    bool anchorProtect = false;
+        //    foreach (var c in p.Board) if (c.CardType == CardType.Anchor) { anchorProtect = true; break; }
+
+        //    if (anchorProtect || p.Trait == TraitType.SafeHarbor)
+        //    {
+        //        // keep everything from anchor onwards, bank the rest
+        //        var keep = new List<CardDefinition>();
+        //        bool hitAnchor = false;
+        //        foreach (var c in p.Board)
+        //        {
+        //            if (c.CardType == CardType.Anchor) hitAnchor = true;
+        //            if (hitAnchor) keep.Add(c);
+        //            else p.Bank.Add(c);
+        //        }
+        //        foreach (var c in keep) p.Bank.Add(c);
+        //        p.Board.Clear();
+        //        Notify("لنگر/لنگرگاه امن کارت‌های قبل را نجات داد.");
+        //    }
+        //    else
+        //    {
+        //        // Davy Jones Locker: owner of this player gets the board
+        //        PlayerData davy = null;
+        //        foreach (var other in Data.Players)
+        //            if (other.Trait == TraitType.DavyJonesLocker && other.PlayerId == p.DavyJonesOwnerId)
+        //            { davy = other; break; }
+
+        //        if (davy != null)
+        //        {
+        //            foreach (var c in p.Board) davy.Bank.Add(c);
+        //            p.Board.Clear();
+        //            Notify($"صندوقچه دیوی جونز: کارت‌ها به بانک {davy.PlayerName} رفت.");
+        //        }
+        //        else
+        //        {
+        //            foreach (var c in p.Board) Data.BurnDeck.Add(c);
+        //            p.Board.Clear();
+        //        }
+        //    }
+
+        //    RaiseChanged();
+        //}
 
         void ExecuteAbility(PlayerData p, CardDefinition card, PlayResult result)
         {

@@ -58,6 +58,8 @@ namespace DeadManDraws
         public RTLTextMeshPro lblHardness;
         public Button Start_Button;
         public Button NewGamePanelBackButton;
+        public Slider SpeedSlider;              // ← جدید
+        public RTLTextMeshPro lblSpeed;                   // ← جدید
 
         [Header("Select Trait Panel")]
         public GameObject SelectTraitPanel;
@@ -67,6 +69,8 @@ namespace DeadManDraws
         public Image Trait2_Image;
         public Button Trait1Help_Button;
         public Button Trait2Help_Button;
+        public RTLTextMeshPro Trait1Name;
+        public RTLTextMeshPro Trait2Name;
 
         [Header("Trait Help Panel")]
         public GameObject TraitHelpPanel;
@@ -86,7 +90,7 @@ namespace DeadManDraws
 
         public GameObject HookSelectPanel;
         public Transform HookContainer;
-        public CardWidget HookCardPrefab;
+        public Button HookCardPrefab;
 
         public GameObject OraclePanel;
         //public RTLTextMeshPro OracleText;
@@ -95,8 +99,12 @@ namespace DeadManDraws
 
         [Header("Game Over")]
         public GameObject GameOverPanel;
-        public RTLTextMeshPro GameOverText;
-        public Button GameOverBackButton;
+        public Image PlayerImage;                        // آواتار برنده
+        public GameObject PlayerName;                    // Text یا RTLTextMeshPro
+        public GameObject PlayerScore;                   // Text یا RTLTextMeshPro
+        public Transform PlayerAreaEndGame;              // محل نمایش بقیه بازیکن‌ها
+        public GameObject EndGamePlayerPanelPrefab;      // Prefab پنل بازیکن (مثل PlayerPanelPrefab)
+        public Button EndGamePopup_CloseButton;
 
         [Header("Target Select Panel")]
         public GameObject TargetSelectPanel;
@@ -110,6 +118,19 @@ namespace DeadManDraws
         public Button TargetCancelButton;         // دکمه انصراف
         public Button TargetConfirmButton;
 
+
+        [Header("Avatar Selection")]
+        public GameObject AvatarSelectPanel;
+        public Transform AvatarGridContainer;
+        public AvatarSelectionWidget AvatarItemPrefab;
+        public Button AvatarConfirmButton;
+        public Button AvatarCancelButton;
+        public Image AvatarPreviewImage;           // تصویر بزرگ آواتار انتخاب‌شده
+        public RTLTextMeshPro AvatarPreviewNameText;
+        public RTLTextMeshPro AvatarPreviewDescText;
+
+        [Header("Avatar Pool")]
+        public List<AvatarDefinition> AvatarPool = new List<AvatarDefinition>();
         // runtime
         private PlayerData _selectedTarget;
         private GameFlowController _flow;
@@ -118,13 +139,15 @@ namespace DeadManDraws
         private UiAudio _audio;
 
         private readonly List<RectTransform> _playerPanelRTs = new List<RectTransform>();
+        private readonly List<GameObject> _endGamePanels = new List<GameObject>();
         private readonly List<float> _targetPanelY = new List<float>();
         private Coroutine _panelAnimCoroutine;
         private readonly List<GameObject> _playerPanels = new List<GameObject>();
         private List<TraitDefinition> _currentTraitChoices;
         private PlayerData _pendingTarget;
         private bool _wired;
-
+        private AvatarDefinition _pendingAvatar;
+        private System.Action<AvatarDefinition> _avatarOnSelected;
         // ==================================================================
         public void BindFlow(GameFlowController flow,GameEngine engine,UiAnimation anim,UiAudio audio)
         {
@@ -176,8 +199,9 @@ namespace DeadManDraws
                 Click();
                 int n = PlayerNumSlider ? Mathf.RoundToInt(PlayerNumSlider.value) : 2;
                 int h = HardnessSlider ? Mathf.RoundToInt(HardnessSlider.value) : 2;
+                float s = SpeedSlider ? SpeedSlider.value : 1f;
                 On(NewGamePanel, false);
-                _flow.StartNewGame(n, h);
+                _flow.StartNewGame(n, h,s);
             });
             Add(NewGamePanelBackButton, () => { Click(); On(NewGamePanel, false); On(StartPanel, true); });
 
@@ -224,7 +248,21 @@ namespace DeadManDraws
                 else if (_engine.AwaitingSwordTarget) _engine.ResolveSwordCard(null, null);
                 _flow.ContinueAfterResolution();
             });
-            Add(GameOverBackButton, () => { Click(); On(GameOverPanel, false); On(StartPanel, true); });
+            
+            Add(AvatarConfirmButton, ConfirmAvatar);
+            Add(AvatarCancelButton, CancelAvatar);
+            if (SpeedSlider)
+            {
+                SpeedSlider.onValueChanged.AddListener(v =>
+                {
+                    if (lblSpeed) lblSpeed.text = v.ToString("0.##") + "x";
+                });
+            }
+            Add(EndGamePopup_CloseButton, () =>
+            {
+                Click();
+                CloseGameOver();
+            });
         }
 
         private void Add(Button b, UnityEngine.Events.UnityAction a)
@@ -259,6 +297,7 @@ namespace DeadManDraws
             On(HookSelectPanel, false);
             On(OraclePanel, false);
             On(GameOverPanel, false);
+            On(AvatarSelectPanel, false);
         }
 
         private void InitNewGameSliders()
@@ -279,6 +318,14 @@ namespace DeadManDraws
                 HardnessSlider.value = 2;
                 if (lblHardness) lblHardness.text = "Normal";
             }
+            if (SpeedSlider)
+            {
+                SpeedSlider.minValue = 0.25f;
+                SpeedSlider.maxValue = 4f;
+                SpeedSlider.wholeNumbers = false;
+                SpeedSlider.value = 1f;
+                if (lblSpeed) lblSpeed.text = "1.0x";
+            }
         }
 
         public void ShowSelectTraitPanel(List<TraitDefinition> traits)
@@ -288,6 +335,8 @@ namespace DeadManDraws
             if (traits == null || traits.Count < 2) return;
             if (Trait1_Image) Trait1_Image.sprite = traits[0].Image;
             if (Trait2_Image) Trait2_Image.sprite = traits[1].Image;
+            if (Trait1Name) Trait1Name.text = traits[0].Name;
+            if (Trait2Name) Trait2Name.text = traits[1].Name;
             On(SelectTraitPanel, true);
         }
 
@@ -398,6 +447,27 @@ namespace DeadManDraws
                 if (nameT) nameT.text = p.PlayerName;
                 if (scoreT) scoreT.text = p.ComputeScore().ToString();
                 if (widget) widget.SetActive(i == engine.Data.CurrentPlayerIndex);
+
+                // آواتار
+                var avatarChild = FindChild(go.transform, "Avatar");
+                if (avatarChild != null)
+                {
+                    var avatarImg = avatarChild.GetComponent<Image>();
+                    if (avatarImg != null)
+                    {
+                        var def = GetAvatarById(p.AvatarIndex);
+                        if (def != null && def.Image != null)
+                        {
+                            avatarImg.enabled = true;
+                            avatarImg.sprite = def.Image;
+                        }
+                        else
+                        {
+                            avatarImg.enabled = false;
+                            avatarImg.sprite = null;
+                        }
+                    }
+                }
             }
 
             // مرتب‌سازی نمایش بر اساس امتیاز (بالاترین بالاتر)
@@ -559,7 +629,7 @@ namespace DeadManDraws
             ShowTargetPanel("یک بازیکن را انتخاب کنید");
             BuildTargetPlayerButtons();
         }
-
+//var txt = b.GetComponentInChildren<RTLTextMeshPro>();
         public void ShowSwordTargetPanel()
         {
             _selectedTarget = null;
@@ -569,6 +639,7 @@ namespace DeadManDraws
         private void BuildTargetPlayerButtons()
         {
             if (TargetContainer == null || TargetPlayerButtonPrefab == null) return;
+
             foreach (Transform t in TargetContainer) Destroy(t.gameObject);
 
             foreach (var p in _engine.Data.Players)
@@ -577,9 +648,37 @@ namespace DeadManDraws
                 if (p.Bank.Count == 0) continue;
 
                 var b = Instantiate(TargetPlayerButtonPrefab, TargetContainer);
-                var txt = b.GetComponentInChildren<RTLTextMeshPro>();
-                if (txt) txt.text = p.PlayerName;
 
+                // آواتار
+                var avatarChild = FindChild(b.transform, "Avatar");
+                if (avatarChild != null)
+                {
+                    var avatarImg = avatarChild.GetComponent<Image>();
+                    if (avatarImg != null)
+                    {
+                        var def = GetAvatarById(p.AvatarIndex);
+                        if (def != null && def.Image != null)
+                        {
+                            avatarImg.enabled = true;
+                            avatarImg.sprite = def.Image;
+                        }
+                        else
+                        {
+                            avatarImg.enabled = false;
+                            avatarImg.sprite = null;
+                        }
+                    }
+                }
+
+                // اسم
+                var nameChild = FindChild(b.transform, "txtPlayerName");
+                if (nameChild != null) SetTextOn(nameChild.gameObject, p.PlayerName);
+
+                // امتیاز
+                var scoreChild = FindChild(b.transform, "txtPlayerScore");
+                if (scoreChild != null) SetTextOn(scoreChild.gameObject, p.ComputeScore().ToString());
+
+                // کلیک
                 var pid = p.PlayerId;
                 b.onClick.RemoveAllListeners();
                 b.onClick.AddListener(() =>
@@ -631,7 +730,17 @@ namespace DeadManDraws
             if (TargetTitleText) TargetTitleText.text = title;
         }
 
+        private void SetTextOn(GameObject go, string value)
+        {
+            if (go == null) return;
+            value = value ?? "";
 
+            var rtl = go.GetComponent<RTLTMPro.RTLTextMeshPro>();
+            if (rtl != null) { rtl.text = value; return; }
+
+            var txt = go.GetComponent<Text>();
+            if (txt != null) txt.text = value;
+        }
         // ==================================================================
         // Map / Hook / Oracle
         // ==================================================================
@@ -666,24 +775,40 @@ namespace DeadManDraws
         public void ShowHookSelectionPanel()
         {
             On(HookSelectPanel, true);
-            if (HookContainer == null || HookCardPrefab == null) return;
+
+            if (HookContainer == null || HookCardPrefab == null)
+            {
+                // اگر پنل تنظیم نشده، اولین کارت بانک خودی رو خودکار بازی کن
+                var self = _engine.CurrentPlayer;
+                var fallback = (self.Bank.Count > 0) ? self.Bank[0] : null;
+                _engine.ResolveHookSelection(fallback);
+                RefreshAll(_engine);
+                _flow.ContinueAfterResolution();
+                return;
+            }
+
             foreach (Transform t in HookContainer) Destroy(t.gameObject);
 
+            // فقط کارت‌های بانک بازیکن خودی
             var p = _engine.CurrentPlayer;
             foreach (var c in p.Bank)
             {
-                var w = Instantiate(HookCardPrefab, HookContainer);
-                w.Bind(c);
+                var btn = Instantiate(HookCardPrefab, HookContainer);
+
+                var img = btn.GetComponent<Image>();
+                if (img == null) img = btn.GetComponentInChildren<Image>();
+                if (img != null) img.sprite = c.Image;
+
                 var card = c;
-                if (w.Button != null)
-                    w.Button.onClick.AddListener(() =>
-                    {
-                        Click();
-                        On(HookSelectPanel, false);
-                        _engine.ResolveHookSelection(card);
-                        RefreshAll(_engine);
-                        _flow.ContinueAfterResolution();
-                    });
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(() =>
+                {
+                    Click();
+                    On(HookSelectPanel, false);
+                    _engine.ResolveHookSelection(card);
+                    RefreshAll(_engine);
+                    _flow.ContinueAfterResolution();
+                });
             }
         }
         public void NotifyBurn()
@@ -770,11 +895,118 @@ namespace DeadManDraws
         public void ShowGameOver(PlayerData winner, GameEngine engine)
         {
             On(GameOverPanel, true);
-            if (GameOverText)
-                GameOverText.text = $"Winner: {winner.PlayerName}\nScore: {winner.ComputeScore()}";
             if (_audio) _audio.PlayWin();
+
+            // ==================== برنده ====================
+            if (PlayerImage)
+            {
+                var def = GetAvatarById(winner.AvatarIndex);
+                PlayerImage.enabled = def != null && def.Image != null;
+                PlayerImage.sprite = def != null ? def.Image : null;
+            }
+            SetTextOn(PlayerName, winner.PlayerName);
+            SetTextOn(PlayerScore, winner.ComputeScore().ToString());
+
+            // ==================== بقیه بازیکن‌ها ====================
+            BuildEndGamePlayerList(engine, winner);
         }
 
+        private void BuildEndGamePlayerList(GameEngine engine, PlayerData winner)
+        {
+            if (PlayerAreaEndGame == null || EndGamePlayerPanelPrefab == null) return;
+
+            // پاک کردن قبلی‌ها
+            foreach (var go in _endGamePanels) if (go) Destroy(go);
+            _endGamePanels.Clear();
+            foreach (Transform t in PlayerAreaEndGame) Destroy(t.gameObject);
+
+            // بقیه بازیکن‌ها (به جز برنده) به ترتیب امتیاز نزولی
+            var others = new List<PlayerData>();
+            foreach (var p in engine.Data.Players)
+                if (p != winner) others.Add(p);
+
+            others.Sort((a, b) =>
+            {
+                int sa = a.ComputeScore();
+                int sb = b.ComputeScore();
+                if (sa != sb) return sb.CompareTo(sa);
+
+                int ca = a.Bank.Count;
+                int cb = b.Bank.Count;
+                if (ca != cb) return cb.CompareTo(ca);
+
+                return a.PlayerId.CompareTo(b.PlayerId);
+            });
+
+            for (int i = 0; i < others.Count; i++)
+            {
+                var p = others[i];
+                var go = Instantiate(EndGamePlayerPanelPrefab, PlayerAreaEndGame);
+                _endGamePanels.Add(go);
+
+                var rt = go.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0.5f, 1f);
+                    rt.anchorMax = new Vector2(0.5f, 1f);
+                    rt.pivot = new Vector2(0.5f, 1f);
+                    rt.anchoredPosition = new Vector2(0f, -i * PlayerPanelSpacing);
+                }
+
+                // آواتار
+                var avatarChild = FindChild(go.transform, "Avatar");
+                if (avatarChild != null)
+                {
+                    var img = avatarChild.GetComponent<Image>();
+                    if (img != null)
+                    {
+                        var def = GetAvatarById(p.AvatarIndex);
+                        if (def != null && def.Image != null)
+                        {
+                            img.enabled = true;
+                            img.sprite = def.Image;
+                        }
+                        else
+                        {
+                            img.enabled = false;
+                            img.sprite = null;
+                        }
+                    }
+                }
+
+                // اسم
+                var nameChild = FindChild(go.transform, "txtPlayerName");
+                if (nameChild != null) SetTextOn(nameChild.gameObject, p.PlayerName);
+
+                // امتیاز
+                var scoreChild = FindChild(go.transform, "txtPlayerScore");
+                if (scoreChild != null) SetTextOn(scoreChild.gameObject, p.ComputeScore().ToString());
+
+                // TurnGlow / PlayerPanelWidget در پایان بازی غیرفعال
+                var widget = go.GetComponent<PlayerPanelWidget>();
+                if (widget == null) widget = go.GetComponentInChildren<PlayerPanelWidget>(true);
+                if (widget != null) widget.SetActive(false);
+
+                var glow = FindChild(go.transform, "TurnGlow");
+                if (glow != null) glow.gameObject.SetActive(false);
+            }
+        }
+
+        private void CloseGameOver()
+        {
+            foreach (var go in _endGamePanels) if (go) Destroy(go);
+            _endGamePanels.Clear();
+            if (PlayerAreaEndGame != null)
+                foreach (Transform t in PlayerAreaEndGame) Destroy(t.gameObject);
+
+            On(GameOverPanel, false);
+            On(StartPanel, true);
+
+            // پاک کردن پنل‌های بازیکن‌های درون‌بازی
+            ClearPlayerPanels();
+
+        }
+        
         // ==================================================================
         private static Transform FindChild(Transform parent, string name)
         {
@@ -785,6 +1017,77 @@ namespace DeadManDraws
                 var r = FindChild(c, name);
                 if (r != null) return r;
             }
+            return null;
+        }
+
+        // ==================================================================
+        // Avatar
+        // ==================================================================
+
+        public void OpenAvatarSelection(AvatarDefinition current, System.Action<AvatarDefinition> onSelected)
+        {
+            _pendingAvatar = current;
+            _avatarOnSelected = onSelected;
+
+            if (AvatarSelectPanel) AvatarSelectPanel.SetActive(true);
+            if (AvatarGridContainer == null || AvatarItemPrefab == null) return;
+
+            foreach (Transform t in AvatarGridContainer) Destroy(t.gameObject);
+
+            if (AvatarPool != null)
+            {
+                foreach (var def in AvatarPool)
+                {
+                    if (def == null) continue;                     // ← اسکیپ آیتم‌های خالی
+                    var w = Instantiate(AvatarItemPrefab, AvatarGridContainer);
+                    if (w == null) continue;
+                    w.Bind(def, OnAvatarItemClicked);
+                }
+            }
+
+            UpdateAvatarPreview(current);
+        }
+
+        private void OnAvatarItemClicked(AvatarDefinition def)
+        {
+            Click();
+            _pendingAvatar = def;
+            UpdateAvatarPreview(def);
+        }
+
+        private void UpdateAvatarPreview(AvatarDefinition def)
+        {
+            if(def != null) { 
+            if (AvatarPreviewImage != null)
+            {
+                AvatarPreviewImage.enabled = def != null && def.Image != null;
+                AvatarPreviewImage.sprite = def != null ? def.Image : null;
+            }
+            AvatarPreviewNameText.text=def.AvatarName;
+            AvatarPreviewDescText.text=  def.Description ;
+        }}
+
+        private void ConfirmAvatar()
+        {
+            Click();
+            if (_pendingAvatar == null) return;
+            var cb = _avatarOnSelected;
+            _avatarOnSelected = null;
+            if (AvatarSelectPanel) AvatarSelectPanel.SetActive(false);
+            cb?.Invoke(_pendingAvatar);
+        }
+
+        private void CancelAvatar()
+        {
+            Click();
+            _avatarOnSelected = null;
+            if (AvatarSelectPanel) AvatarSelectPanel.SetActive(false);
+        }
+        public AvatarDefinition GetAvatarById(int avatarId)
+        {
+            if (AvatarPool == null) return null;
+            foreach (var a in AvatarPool)
+                if (a != null && a.AvatarId == avatarId) return a;
             return null;
         }
     }

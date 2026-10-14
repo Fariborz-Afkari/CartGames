@@ -10,7 +10,7 @@ namespace DeadManDraws
         public bool IsHuman;
         public TraitType Trait;
         public int Hardness; // for AI
-
+        public AvatarDefinition Avatar;   // ← اضافه کن
         public List<CardDefinition> Bank = new List<CardDefinition>();
         public List<CardDefinition> Board = new List<CardDefinition>();
 

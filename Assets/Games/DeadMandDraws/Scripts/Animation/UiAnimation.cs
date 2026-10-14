@@ -8,6 +8,7 @@ namespace DeadManDraws
     {
         [Header("References")]
         public GameUIController Controller;
+        public GameFlowController Flow;
 
         [Header("Timing")]
         public float DrawDuration = 0.35f;
@@ -21,6 +22,12 @@ namespace DeadManDraws
         [Header("Debug")]
         public bool VerboseLog = true;
 
+        [Header("Speed")]
+        [Range(0.25f, 4f)]
+        //public float SpeedMultiplier = 1f;
+
+        private float GameSpeed => (Flow != null) ? Flow.GameSpeed : 1f;
+        private float D(float seconds) => seconds / Mathf.Max(0.01f, GameSpeed);
         private RectTransform _animLayer;
         private Canvas _canvas;
 
@@ -91,11 +98,12 @@ namespace DeadManDraws
             if (img == null) yield break;
 
             var rt = img.rectTransform;
+            float duration = D(DrawDuration);
             float t = 0f;
-            while (t < DrawDuration)
+            while (t < duration)
             {
                 t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / DrawDuration);
+                float k = Mathf.Clamp01(t / duration);
                 float eased = Mathf.SmoothStep(0f, 1f, k);
 
                 rt.position = Vector3.Lerp(from.position, to.position, eased);
@@ -113,7 +121,6 @@ namespace DeadManDraws
 
             Destroy(rt.gameObject);
         }
-
         // ============================================================
         // BURN
         // ============================================================
@@ -165,10 +172,11 @@ namespace DeadManDraws
             cg.blocksRaycasts = false;
 
             float t = 0f;
-            while (t < BurnDuration)
+            float duration = D(BurnDuration);
+            while (t < duration)
             {
                 t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / BurnDuration);
+                float k = Mathf.Clamp01(t / duration);
                 float eased = Mathf.SmoothStep(0f, 1f, k);
 
                 rt.position = Vector3.Lerp(startPos, endPos, eased);
@@ -194,7 +202,7 @@ namespace DeadManDraws
         {
             if (p == null || Controller == null || Controller.Slots == null || p.Board.Count == 0)
             {
-                yield return new WaitForSeconds(0.2f);
+                yield return new WaitForSeconds(D(0.2f));
                 onDone?.Invoke();
                 yield break;
             }
@@ -228,7 +236,7 @@ namespace DeadManDraws
                 yield return new WaitForSeconds(stagger);
             }
 
-            yield return new WaitForSeconds(CollectDuration);
+            yield return new WaitForSeconds(D(CollectDuration));
             onDone?.Invoke();
         }
 
@@ -242,10 +250,11 @@ namespace DeadManDraws
 
             var rt = img.rectTransform;
             float t = 0f;
-            while (t < CollectDuration)
+            float duration = D(CollectDuration);
+            while (t < duration)
             {
                 t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / CollectDuration);
+                float k = Mathf.Clamp01(t / duration);
                 float eased = Mathf.SmoothStep(0f, 1f, k);
                 rt.position = Vector3.Lerp(from, to, eased);
                 rt.localScale = Vector3.one * Mathf.Lerp(1f, 0.4f, eased);

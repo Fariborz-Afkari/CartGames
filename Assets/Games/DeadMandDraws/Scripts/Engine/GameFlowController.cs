@@ -21,6 +21,16 @@ namespace DeadManDraws
 
         public event Action<GameState> OnStateChanged;
 
+        [Header("Avatars")]
+        [SerializeField] private List<AvatarDefinition> _avatarPool = new List<AvatarDefinition>();
+        private AvatarDefinition _humanAvatar;
+
+        [Header("Speed")]
+        [Range(0.25f, 4f)]
+        public float GameSpeed = 1f;   // 1 = معمولی، بیشتر = سریع‌تر
+
+        private float D(float seconds) => seconds / Mathf.Max(0.01f, GameSpeed);
+
         private AiPlayer _ai;
         private List<TraitDefinition> _pendingTraits;
 
@@ -52,9 +62,33 @@ namespace DeadManDraws
         // ------------------------------------------------------------------
         // New game
         // ------------------------------------------------------------------
-        public void StartNewGame(int playerCount, int hardness)
+        //public void StartNewGame(int playerCount, int hardness)
+        //{
+        //    if (Engine == null) return;
+
+        //    var players = new List<PlayerData>();
+        //    for (int i = 0; i < playerCount; i++)
+        //    {
+        //        players.Add(new PlayerData
+        //        {
+        //            PlayerId = i,
+        //            PlayerName = i == 0 ? "You" : "AI " + i,
+        //            IsHuman = i == 0,
+        //            AvatarIndex = i,
+        //            Hardness = hardness
+        //        });
+        //    }
+
+        //    Engine.InitGame(playerCount, hardness, players, _cardPool);
+
+        //    // مرحله انتخاب آواتار
+        //    _ui.OpenAvatarSelection(_humanAvatar, OnHumanAvatarChosen);
+        //}
+        public void StartNewGame(int playerCount, int hardness, float speed)
         {
             if (Engine == null) return;
+
+            GameSpeed = Mathf.Clamp(speed, 0.25f, 4f);
 
             var players = new List<PlayerData>();
             for (int i = 0; i < playerCount; i++)
@@ -70,11 +104,58 @@ namespace DeadManDraws
             }
 
             Engine.InitGame(playerCount, hardness, players, _cardPool);
+
+            _ui.OpenAvatarSelection(_humanAvatar, OnHumanAvatarChosen);
+        }
+        private void OnHumanAvatarChosen(AvatarDefinition def)
+        {
+            
+            _humanAvatar = def;
+
+            // ذخیره در PlayerData
+            if (def != null)
+            {
+                var human = Engine.Data.Players[0];
+                human.AvatarIndex = def.AvatarId;
+                //human.PlayerName = def.AvatarName;   // اگه می‌خوای اسم بازیکن هم آواتار بشه
+            }
+
+            // انتخاب آواتار برای AI‌ها
+            AssignAiAvatars();
+
+            // ادامه: انتخاب trait
             PickTraitChoices();
             SetState(GameState.SelectTrait);
             _ui.ShowSelectTraitPanel(_pendingTraits);
         }
 
+        private void AssignAiAvatars()
+        {
+            if (_avatarPool == null || _avatarPool.Count == 0) return;
+
+            // کپی و شافل
+            var pool = new List<AvatarDefinition>(_avatarPool);
+            for (int i = pool.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                (pool[i], pool[j]) = (pool[j], pool[i]);
+            }
+
+            // اول آواتار خودی رو از لیست حذف کن
+            if (_humanAvatar != null) pool.Remove(_humanAvatar);
+
+            int idx = 0;
+            for (int i = 1; i < Engine.Data.Players.Count; i++)
+            {
+                if (idx >= pool.Count) idx = 0;   // اگه کم آمد دوباره بچرخ
+                var p = Engine.Data.Players[i];
+                var def = pool[idx % pool.Count];
+                p.AvatarIndex = def.AvatarId;
+                p.PlayerName = def.AvatarName;    // اسم AI = اسم آواتار
+                idx++;
+            }
+            
+        }
         private void PickTraitChoices()
         {
             _pendingTraits = new List<TraitDefinition>();
@@ -171,11 +252,11 @@ namespace DeadManDraws
             if (c == null) { EndGame(); yield break; }
 
             if (_animation) _animation.AnimateDrawCard(c);
-            yield return new WaitForSeconds(0.35f);
+            yield return new WaitForSeconds(D(0.35f));
 
             var res = Engine.PlayCardForCurrentPlayer(c);
             _ui.RefreshAll(Engine);
-            yield return new WaitForSeconds(0.25f);
+            yield return new WaitForSeconds(D(0.25f));
 
             //if (res.Busted)
             //{
@@ -310,7 +391,7 @@ namespace DeadManDraws
         // ------------------------------------------------------------------
         private IEnumerator AITurnRoutine(PlayerData p)
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(D(0.5f));
 
             int guard = 0;
             while (guard++ < 64)
@@ -329,11 +410,11 @@ namespace DeadManDraws
                 if (c == null) { EndGame(); yield break; }
 
                 if (_animation) _animation.AnimateDrawCard(c);
-                yield return new WaitForSeconds(0.35f);
+                yield return new WaitForSeconds(D(0.35f));
 
                 var res = Engine.PlayCardForCurrentPlayer(c);
                 _ui.RefreshAll(Engine);
-                yield return new WaitForSeconds(0.25f);
+                yield return new WaitForSeconds(D(0.25f));
 
                 //if (res.Busted)
                 //{
@@ -366,14 +447,14 @@ namespace DeadManDraws
                     {
                         Engine.ResolveCannonCard(null, null);
                     }
-                    yield return new WaitForSeconds(0.35f);
+                    yield return new WaitForSeconds(D(0.35f));
                 }
 
                 if (Engine.AwaitingHookCard)
                 {
                     var h = (p.Bank.Count > 0) ? _ai.PickHookCard() : null;
                     Engine.ResolveHookSelection(h);
-                    yield return new WaitForSeconds(0.35f);
+                    yield return new WaitForSeconds(D(0.35f));
 
                     if (Engine.PendingBust)
                     {
@@ -387,7 +468,7 @@ namespace DeadManDraws
                     var m = (Engine.PendingMapChoices != null && Engine.PendingMapChoices.Count > 0)
                         ? _ai.PickMapCard() : null;
                     Engine.ResolveMapChoice(m);
-                    yield return new WaitForSeconds(0.35f);
+                    yield return new WaitForSeconds(D(0.35f));
 
                     if (Engine.PendingBust)
                     {
@@ -409,7 +490,7 @@ namespace DeadManDraws
                     {
                         Engine.ResolveSwordCard(null, null);
                     }
-                    yield return new WaitForSeconds(0.35f);
+                    yield return new WaitForSeconds(D(0.35f));
                 }
 
                 if (Engine.AwaitingOracleDecision)
@@ -501,11 +582,11 @@ namespace DeadManDraws
             if (_animation != null)
                 _animation.AnimateBurnCards(Engine.CurrentPlayer);
 
-            yield return new WaitForSeconds(0.9f);
+            yield return new WaitForSeconds(D(0.9f));
 
             Engine.ExecutePendingBust();
             _ui.RefreshAll(Engine);
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(D(0.5f));
 
             EndTurn();
         }

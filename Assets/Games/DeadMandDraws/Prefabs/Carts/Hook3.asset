@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e84285e2df0223c43a34010dabba60ce, type: 3}
+  m_Name: Hook3
+  m_EditorClassIdentifier: Assembly-CSharp::DeadManDraws.CardDefinition
+  CardId: 20
+  Image: {fileID: -6225744776901329628, guid: c6eb349ddd5cb164388fa5d27729c240, type: 3}
+  CardType: 3
+  Value: 3
+  Description: "\u06CC\u06A9\u06CC \u0627\u0632 \u06A9\u0627\u0631\u062A\u200C\u0647\u0627\u06CC \u0642\u0628\u0644\u0627\u064B \u0628\u0627\u0646\u06A9 \u0634\u062F\u0647 \u062E\u0648\u062F \u0631\u0627 \u0628\u0647 \u0645\u0646\u0637\u0642\u0647 \u0628\u0627\u0632\u06CC (BoardPanel) \u0628\u06CC\u0627\u0648\u0631\u06CC\u062F \u0648 \u0628\u0644\u0627\u0641\u0627\u0635\u0644\u0647 \u0642\u0627\u0628\u0644\u06CC\u062A \u0622\u0646 \u0631\u0627 \u0641\u0639\u0627\u0644 \u06A9\u0646\u06CC\u062F"
+  Name: "\u0642\u0644\u0627\u0628"
