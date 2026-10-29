@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09de36185c32ae84da70855274dfc8f6, type: 3}
+  m_Name: Gift2
+  m_EditorClassIdentifier: Assembly-CSharp::AngelVSZombie.CardDefinition
+  CardName: "\u0647\u062F\u06CC\u0647"
+  CardType: 12
+  Value: 2
+  Claw: 1
+  Description: "\u064A\u0643 \u0627\u0632 \u0628\u0627\u0632\u064A\u0643\u0646 \u0647\u0627\u064A \u0632\u0646\u062F\u0647 \u0631\u0627 \u0627\u0646\u062A\u062E\u0627\u0628 \u0643\u0646\u064A\u062F \u0648 \u0627\u0648 \u0645\u062C\u0628\u0648\u0631 \u0627\u0633\u062A \u064A\u0643 \u0643\u0627\u0631\u062A \u0628\u0647 \u0627\u0646\u062A\u062E\u0627\u0628 \u062E\u0648\u062F\u0634 \u0628\u0647 \u0634\u0645\u0627 \u0628\u062F\u0647\u062F."
+  Immediate: 0
+  WithDead: 0
+  Image: {fileID: -3110284172125128327, guid: 90b14a9171dab634985634f54921d23d, type: 3}
